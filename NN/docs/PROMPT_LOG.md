@@ -13,13 +13,13 @@ Cross-check the session totals with `/cost`.
 
 | Category | API calls | Input | Cache write | Cache read | Output | Cost | Share |
 |---|---|---:|---:|---:|---:|---:|---:|
-| Planning | 30 | 60 | 119,336 | 2,932,234 | 29,536 | $2.13 | 14 % |
-| Implementation | 72 | 146 | 201,836 | 10,214,820 | 140,560 | $6.47 | 41 % |
-| Training & testing | 58 | 116 | 158,869 | 7,331,314 | 65,841 | $4.05 | 26 % |
-| Documentation | 34 | 68 | 72,653 | 4,507,233 | 21,393 | $1.91 | 12 % |
+| Planning | 30 | 60 | 119,336 | 2,932,234 | 29,536 | $2.13 | 13 % |
+| Implementation | 79 | 160 | 209,615 | 12,006,486 | 142,728 | $6.93 | 42 % |
+| Training & testing | 59 | 118 | 159,994 | 7,588,868 | 66,905 | $4.14 | 25 % |
+| Documentation | 39 | 78 | 74,594 | 5,778,216 | 24,264 | $2.24 | 13 % |
 | Research & context | 9 | 18 | 21,341 | 1,287,236 | 5,120 | $0.53 | 3 % |
-| Answers | 9 | 18 | 11,018 | 1,232,526 | 8,580 | $0.51 | 3 % |
-| **Total** | **212** | 426 | 585,053 | 27,505,363 | 271,030 | **$15.60** | 100 % |
+| Answers | 12 | 24 | 12,503 | 1,989,240 | 9,659 | $0.69 | 4 % |
+| **Total** | **228** | 458 | 597,383 | 31,582,280 | 278,212 | **$16.66** | 100 % |
 
 **By prompt**
 
@@ -36,12 +36,11 @@ Cross-check the session totals with `/cost`.
 | 9 | Add a table of api tokens and cost in the deck … | 17 | 18,336 | 3,601,571 | $1.74 |
 | 10 | read the claude.md file to make sure you dont f… | 35 | 62,652 | 4,053,605 | $3.19 |
 | 11 | for whatever reason you stopped in the middle o… | 26 | 10,650 | 1,567,416 | $0.92 |
-| 12 | There are a few things I want to have changed. … | 59 | 106,597 | 9,748,288 | $5.45 |
-| 13 | I did the auth | 5 | 1,245 | 1,238,013 | $0.30 |
+| 12 | There are a few things I want to have changed. … | 80 | 115,024 | 15,063,218 | $6.81 |
 
 Category rules: **Planning** = plan mode or questions/plan approval · **Training & testing** = training, verify scripts, pytest, API checks · **Documentation** = Markdown files and this log · **Implementation** = other file edits and shell commands · **Research & context** = reading files, PDF, skills · **Answers** = replies without a tool call.
 
-Prices (USD per 1M tokens, Claude Opus 5.5): input $4 · output $20 · cache read $0.20 · cache write $5 (5 min) / $8 (1 h). `/cost` also counts small side calls (e.g. session titles, ~$0.002) that are not in the session log. The prompt that is running while the table is generated is only partly included. Last updated 2026-10-19 21:02.
+Prices (USD per 1M tokens, Claude Opus 5.5): input $4 · output $20 · cache read $0.20 · cache write $5 (5 min) / $8 (1 h). `/cost` also counts small side calls (e.g. session titles, ~$0.002) that are not in the session log. The prompt that is running while the table is generated is only partly included. Last updated 2026-10-19 21:11.
 <!-- COSTS:END -->
 
 ---
@@ -196,4 +195,10 @@ Prices (USD per 1M tokens, Claude Opus 5.5): input $4 · output $20 · cache rea
 - Pages checked in Node + jsdom with the real engines (Pyodide, wasm, TF.js): all 5 pages render, no JS errors, XOR training in
   the page works. Not checked visually in a real browser (only Safari here, not scriptable).
 - Installed with Homebrew: `emscripten`, `gh` (node came with emscripten).
-- **Tokens:** output 106,597 (59 API calls) · **$5.45** (input/cache split: see the "By prompt" table)
+- **GitHub:** public repo <https://github.com/FreitagWieDerWochenTag/INSY> created and pushed (`gh repo create`), Pages enabled
+  with source GitHub Actions. First workflow run green (build 1m0s incl. all tests, deploy 9s). Live:
+  <https://freitagwiederwochentag.github.io/INSY/NN/>. All files served (checked with curl: pages, wasm, Python files, models).
+  Links in the READMEs and `common.js` changed to the real account name.
+- `NN/tools/token_usage.py`: `MERGE_INTO_PREVIOUS` lists short follow-up prompts (GitHub login back-and-forth) whose
+  API calls count toward the prompt before them, so the cost table shows no separate rows for them. Totals unchanged. Test added.
+- **Tokens:** see the "By prompt" table (includes the follow-ups; the running part is only counted partly)

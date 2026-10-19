@@ -40,6 +40,16 @@ PRICES = {
                         "cache_write_5m": 5.00, "cache_write_1h": 8.00},
 }
 
+# Short follow-ups (e.g. GitHub login back-and-forth) that are counted as part of the prompt before them,
+# so the "by prompt" table has no separate row for them. Totals don't change. Matched by the prompt's start.
+MERGE_INTO_PREVIOUS = [
+    "gh auth login",
+    "I did the auth",
+    "I ran it in a different tab",
+    "ok now it should have worked",
+    "yes do that and ofc do it with this comment",
+]
+
 CATEGORIES = ["Planning", "Implementation", "Training & testing", "Documentation",
               "Research & context", "Answers"]
 TOKEN_FIELDS = [("input", "Input"), ("cache_write", "Cache write"),
@@ -127,7 +137,18 @@ def collect_sessions(paths):
             print(f"Session log: {path}")
         else:
             print(f"Skipped (no prompt): {path}")
-    return prompts
+    return merge_follow_ups(prompts)
+
+
+def merge_follow_ups(prompts):
+    """Add the calls of prompts listed in MERGE_INTO_PREVIOUS to the prompt before them."""
+    merged = []
+    for text, calls in prompts:
+        if merged and text.strip().startswith(tuple(MERGE_INTO_PREVIOUS)):
+            merged[-1] = (merged[-1][0], merged[-1][1] + calls)
+        else:
+            merged.append((text, calls))
+    return merged
 
 
 def prompt_text(entry):

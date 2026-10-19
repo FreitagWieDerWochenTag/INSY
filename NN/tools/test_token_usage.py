@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
-from token_usage import Call, classify, cost, prompt_text  # noqa: E402
+from token_usage import Call, classify, cost, merge_follow_ups, prompt_text  # noqa: E402
 
 
 def make_call(mode="auto", tools=(), model="claude-opus-5-5", **usage):
@@ -53,3 +53,9 @@ def test_classify(call, expected):
 def test_prompt_text(content, expected):
     entry = {"type": "user", "message": {"content": content}}
     assert prompt_text(entry) == expected
+
+
+def test_follow_ups_are_merged_into_previous_prompt():
+    a, b, c = make_call(output_tokens=1), make_call(output_tokens=2), make_call(output_tokens=3)
+    merged = merge_follow_ups([("build it", [a]), ("I did the auth", [b]), ("next task", [c])])
+    assert merged == [("build it", [a, b]), ("next task", [c])]
