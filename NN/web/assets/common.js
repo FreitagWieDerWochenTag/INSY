@@ -22,7 +22,7 @@ export function el(tag, attrs, parent) {
 
 // ---------- source links ----------
 // On GitHub Pages (<owner>.github.io/<repo>/NN/...) the repo is derived from the URL.
-const FALLBACK_REPO = "https://github.com/187hahaxd/INSY";
+const FALLBACK_REPO = "https://github.com/FreitagWieDerWochenTag/INSY";
 export function sourceUrl(path) {
   const host = location.hostname;
   let repo = FALLBACK_REPO;
