@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BCD Decoder Net</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>BCD Decoder Net <span>4 → 16 → 7</span></h1>
+    <p class="lede">A feedforward neural network written from scratch that turns a 4-bit BCD digit (0–9) into the
+      seven segments A–G of a display. It is built in six parts: Python, a TensorFlow comparison, C inference, and an ESP32.
+      Every page runs the <strong>real code</strong> of its part in your browser. Nothing is precomputed, except where a page says so.</p>
+  </header>
+
+  <section class="panel">
+    <h2>The pipeline</h2>
+    <div class="pipeline">
+      <span>digit 5</span><i>→</i><span>BCD 0101</span><i>→</i><span>4 inputs</span><i>→</i>
+      <span>16 hidden (sigmoid)</span><i>→</i><span>7 outputs</span><i>→</i><span>≥ 0.5 → A-CD-FG</span><i>→</i><span>GPIO pins</span>
+    </div>
+  </section>
+
+  <div class="cards">
+    <a class="panel card" href="part1-2.html">
+      <span class="num">Parts 1 + 2</span>
+      <h3>Network from scratch</h3>
+      <p>Neuron → Layer → NeuralNetwork with backpropagation, trained on XOR (2-2-1) and the 7-segment decoder (4-16-7),
+        exported as JSON, TXT and C header. You can retrain it right in the page.</p>
+      <span class="runs">runs: part1_2_python/nn in Pyodide (CPython + NumPy as WebAssembly)</span>
+    </a>
+    <a class="panel card" href="part3.html">
+      <span class="num">Part 3</span>
+      <h3>TensorFlow comparison</h3>
+      <p>The same architecture, start weights and sample order in Keras: training curves, speed and accuracy compared with ours.</p>
+      <span class="runs">runs: trained Keras weights in TensorFlow.js · recorded results of compare_tf.py</span>
+    </a>
+    <a class="panel card" href="part4-5.html">
+      <span class="num">Parts 4 + 5</span>
+      <h3>Forward pass in C</h3>
+      <p>Inference-only C library. Part 4 reads the weights from the .txt export, Part 5 compiles them in from the .h file.</p>
+      <span class="runs">runs: part4_5_c compiled to WebAssembly (Emscripten)</span>
+    </a>
+    <a class="panel card" href="part6.html">
+      <span class="num">Part 6</span>
+      <h3>ESP32 microcontroller</h3>
+      <p>The Arduino sketch reads a digit over serial, runs the C network and drives a 7-segment display through 7 GPIOs.
+        Shown on a simulated board with wires.</p>
+      <span class="runs">runs: the unchanged part6_esp32/src/main.cpp as WebAssembly</span>
+    </a>
+  </div>
+
+  <section class="panel">
+    <h2>How the pages compute</h2>
+    <div class="tbl-scroll"><table class="data">
+      <tr><th>Page</th><th style="text-align:left">Implementation</th><th style="text-align:left">Model file</th></tr>
+      <tr><td>Parts 1+2</td><td style="text-align:left">Python <code>NeuralNetwork.load()</code> / <code>.forward()</code> / <code>.train()</code></td><td style="text-align:left">models/7seg.json, xor.json</td></tr>
+      <tr><td>Part 3</td><td style="text-align:left">TensorFlow.js Dense layers + recorded Python/TensorFlow runs</td><td style="text-align:left">models/7seg_tf_weights.json, tf_comparison.json</td></tr>
+      <tr><td>Parts 4+5</td><td style="text-align:left">C <code>nn_load_txt()</code> / <code>nn_init_from_header()</code> + <code>nn_forward()</code></td><td style="text-align:left">models/7seg.txt, 7seg_net.h</td></tr>
+      <tr><td>Part 6</td><td style="text-align:left">ESP32 sketch <code>setup()</code> / <code>loop()</code> + mock Arduino API</td><td style="text-align:left">models/7seg_net.h</td></tr>
+    </table></div>
+    <p class="note">The JavaScript on these pages only draws. Forward passes and training happen in the code of the respective part.</p>
+  </section>
+</div>
+<script type="module">
+import { frame } from "./assets/common.js";
+frame();
+</script>
+</body>
+</html>

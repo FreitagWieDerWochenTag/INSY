@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Part 3 · TensorFlow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>Part 3 <span>· TensorFlow vs. from scratch</span></h1>
+    <p class="lede">The same 4-16-7 and 2-2-1 networks in Keras, with the same start weights, sample order, epochs and learning rate,
+      compared with our implementation.</p>
+  </header>
+
+  <div class="notice" role="note">
+    <p><strong>Visualization only.</strong> The real Part 3 is Python + TensorFlow:
+      <span id="src-tf"></span> builds and trains the Keras model, <span id="src-cmp"></span> runs the comparison and saves
+      <span id="src-keras"></span>. TensorFlow does not run in a browser, so this page loads the trained Keras weights into
+      <strong>TensorFlow.js</strong> to draw the forward pass. TensorFlow.js is not part of the assignment and would normally not be used here.</p>
+    <p>The training curves and timings below were <strong>recorded</strong> by <code>compare_tf.py</code> (Python TensorFlow
+      <span id="tf-meta"></span>), not computed in your browser.</p>
+  </div>
+
+  <main class="board">
+    <section class="panel">
+      <h2>Input · 4-bit BCD</h2>
+      <div class="bits" id="bits"></div>
+      <p class="code" id="code"></p>
+      <div class="keys" id="keys"></div>
+      <p class="hint">Dashed codes 10–15 were never trained.</p>
+    </section>
+    <section class="panel net-panel">
+      <div class="net-head">
+        <h2>Forward pass · Keras model (MSE loss) in TensorFlow.js</h2>
+        <button class="tool" id="animate" type="button">Animate layers</button>
+      </div>
+      <div class="status" id="status"><span class="dot"></span><span class="status-text">loading TensorFlow.js…</span></div>
+      <div class="svg-scroll"><svg class="net" id="net" viewBox="0 0 640 470" role="img" aria-label="Network graph"></svg></div>
+      <div class="legend">
+        <span><i style="background:var(--pos)"></i>positive weight</span>
+        <span><i style="background:var(--neg)"></i>negative weight</span>
+        <span>thickness = |w| · brightness = |w · a|</span>
+        <span><i class="sw-act"></i>fill = activation</span>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Output · segments A–G</h2>
+      <div class="display">
+        <svg class="seven" id="seven" viewBox="0 0 120 200" role="img" aria-label="7-segment display"></svg>
+        <div class="readout" id="readout"></div>
+      </div>
+      <table class="segtable" id="segtable"></table>
+    </section>
+  </main>
+
+  <section class="panel">
+    <h2>Same input · TensorFlow model vs. our model</h2>
+    <p class="sub">Two different trained networks: Keras with MSE loss, and ours (models/7seg.json, computed by the Python code in Pyodide).
+      Both decode all ten digits; the raw values differ slightly.</p>
+    <div class="tbl-scroll"><table class="data" id="cmp"></table></div>
+  </section>
+
+  <section class="panel">
+    <h2>Training · recorded by compare_tf.py</h2>
+    <p class="sub" id="tf-sub"></p>
+    <div class="seg" role="group" aria-label="Dataset">
+      <button class="seg-btn" type="button" data-ds="7seg" aria-pressed="true">7-segment 4-16-7</button>
+      <button class="seg-btn" type="button" data-ds="xor" aria-pressed="false">XOR 2-2-1</button>
+    </div>
+    <div class="lower">
+      <div>
+        <svg class="chart" id="chart" viewBox="0 0 560 260" role="img" aria-label="Training loss curves"></svg>
+        <div class="legend" id="chart-legend"></div>
+      </div>
+      <div>
+        <div class="tbl-scroll"><table class="data" id="tf-table"></table></div>
+        <p class="note">Keras MSE averages over the outputs, so its gradient is 2/n<sub>out</sub> times ours: 2× larger for XOR
+          (1 output), 2/7 for the 7-segment net. With our loss ½·Σdiff², TensorFlow follows our curve to about 1e-5. That shows
+          both implementations compute the same backpropagation.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import { $, frame, InputPanel, NetView, SegDisplay, lossChart, setStatus, sourceLink, getJSON, segmentsOf, SEGMENTS, PATTERNS } from "./assets/common.js";
+import { TFEngine, PyEngine } from "./assets/engines.js";
+
+frame();
+$("src-tf").innerHTML = sourceLink("part3_tensorflow/tf_net.py", "tf_net.py");
+$("src-cmp").innerHTML = sourceLink("part3_tensorflow/compare_tf.py", "compare_tf.py");
+$("src-keras").innerHTML = sourceLink("models/7seg_tf.keras", "models/7seg_tf.keras");
+
+const tfe = new TFEngine("build/models/7seg_tf_weights.json");
+const py = new PyEngine();
+const view = new NetView($("net"));
+const display = new SegDisplay($("seven"), $("readout"), $("segtable"));
+let pyReady = null;   // ours, loaded in the background
+
+let ticket = 0;
+async function forward(bits) {
+  const t = ++ticket;
+  try {
+    const r = await tfe.forward(bits);
+    if (t !== ticket) return;
+    if (!view.net) view.build(tfe.network());
+    view.render(r); display.render(r.output);
+    setStatus("status", "ready", `computed by TensorFlow.js ${window.tf.version.tfjs} (${tfe.backend} backend) · models/7seg_tf_weights.json · ${r.compute_ms.toFixed(2)} ms`);
+    compare(bits, r);
+  } catch (err) {
+    setStatus("status", "error", "TensorFlow.js error: " + err.message);
+  }
+}
+
+async function compare(bits, tfResult) {
+  const head = `<tr><th>Model</th>${[...SEGMENTS].map((s) => `<th>${s}</th>`).join("")}<th>Shows</th><th>max |Δ|</th></tr>`;
+  const row = (label, out, ref) => {
+    const segs = segmentsOf(out), d = PATTERNS[segs.join("")];
+    const diff = ref ? Math.max(...out.map((v, i) => Math.abs(v - ref[i]))).toExponential(1) : "ref";
+    return `<tr><td>${label}</td>${out.map((v, i) => `<td class="${segs[i] ? "on" : "off"}">${v.toFixed(4)}</td>`).join("")}<td>${d ?? "–"}</td><td>${diff}</td></tr>`;
+  };
+  let ours = `<tr><td>ours · Python</td><td colspan="9" class="off">loading Python…</td></tr>`;
+  $("cmp").innerHTML = head + row("Keras MSE · TF.js", tfResult.output) + ours;
+  try {
+    await pyReady;
+    const r = await py.forward("7seg", bits);
+    ours = row("ours · Python", r.output, tfResult.output);
+  } catch (err) {
+    ours = `<tr><td>ours · Python</td><td colspan="9" class="off">unavailable · ${err.message}</td></tr>`;
+  }
+  $("cmp").innerHTML = head + row("Keras MSE · TF.js", tfResult.output) + ours;
+}
+
+// ---------- recorded training comparison ----------
+let tfData = null, dataset = "7seg";
+const RUN_ORDER = ["ours", "tf_mse", "tf_same"];
+const SHORT = { ours: "ours", tf_mse: "TF · MSE", tf_same: "TF · our loss" };
+function renderTF() {
+  const d = tfData.datasets[dataset];
+  lossChart($("chart"), RUN_ORDER.map((k) => ({ key: k, short: SHORT[k], epochs: tfData.history_epochs, values: d.runs[k].history })),
+    { maxEpoch: tfData.epochs });
+  $("tf-table").innerHTML = `<tr><th>Run</th><th>Time</th><th>Final MSE</th><th>Correct</th><th>MSE&lt;0.01</th><th>MSE&lt;0.001</th><th>|Δ| vs ours</th></tr>` +
+    RUN_ORDER.map((k) => {
+      const r = d.runs[k], e = (t) => r.epochs_to_mse[t] ?? "never";
+      return `<tr><td>${SHORT[k]}</td><td>${r.seconds.toFixed(2)} s</td><td>${r.final_mse.toExponential(2)}</td>` +
+        `<td class="${r.correct === r.samples ? "ok" : "bad"}">${r.correct}/${r.samples}</td><td>${e("0.01")}</td><td>${e("0.001")}</td>` +
+        `<td>${k === "ours" ? "ref" : r.max_diff_to_ours.toExponential(1)}</td></tr>`;
+    }).join("");
+  $("tf-sub").textContent = `${d.sizes.join("-")} · ${tfData.epochs} epochs · learning rate ${tfData.learning_rate} · seed ${tfData.seed} · ` +
+    "same start weights and sample order. Hover the chart for values. Times include building the TensorFlow graph.";
+}
+document.querySelectorAll("[data-ds]").forEach((b) => b.addEventListener("click", () => {
+  dataset = b.dataset.ds;
+  document.querySelectorAll("[data-ds]").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  if (tfData) renderTF();
+}));
+$("chart-legend").innerHTML = RUN_ORDER.map((k) => `<span><i class="sw-${k}"></i>${SHORT[k]}</span>`).join("");
+getJSON("build/models/tf_comparison.json").then((d) => {
+  tfData = d;
+  $("tf-meta").textContent = `· ${d.epochs} epochs, learning rate ${d.learning_rate}`;
+  renderTF();
+}).catch((err) => { $("tf-sub").textContent = "could not load the recorded results: " + err.message; });
+
+$("animate").addEventListener("click", () => view.animate());
+const panel = new InputPanel({ bitsBox: $("bits"), keysBox: $("keys"), codeBox: $("code"), onChange: forward });
+pyReady = py.init().then(() => py.load("7seg", "build/models/7seg.json"));
+forward(panel.bits.slice());
+</script>
+</body>
+</html>

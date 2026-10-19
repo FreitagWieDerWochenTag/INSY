@@ -1,0 +1,13 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# build output (C programs, WebAssembly + copied files for the web page, PlatformIO)
+build/
+.pio/
+
+# macOS
+.DS_Store

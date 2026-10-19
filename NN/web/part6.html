@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Part 6 · ESP32</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>Part 6 <span>· ESP32 + 7-segment display</span></h1>
+    <p class="lede">The Arduino sketch <span id="src-sketch"></span> reads a digit from the serial monitor, turns it into
+      4 BCD bits, runs the C network from Part 5 and switches 7 GPIOs. Here the <strong>unchanged sketch</strong> runs as
+      WebAssembly against a small mock of the Arduino API (<span id="src-mock"></span>). The board below shows the pin levels the
+      sketch set with <code>digitalWrite()</code>, wired as in the assignment's table (each through 330 Ω).</p>
+    <div class="status" id="status"><span class="dot"></span><span class="status-text">loading the sketch…</span></div>
+  </header>
+
+  <div class="bench-grid">
+    <div class="bench" role="img" aria-label="ESP32 DevKitC wired to a common-cathode 7-segment display">
+      <svg class="bench-svg" id="bench" viewBox="0 0 900 552"></svg>
+    </div>
+
+    <section class="panel serial-box" aria-labelledby="serial-title">
+      <h2 id="serial-title">Serial monitor · 115200 baud</h2>
+      <pre class="out serial-log" id="serial" aria-live="polite"></pre>
+      <form class="serial-in" id="serial-form">
+        <input id="serial-input" autocomplete="off" placeholder="type a digit 0–9 and press Enter" aria-label="Serial input">
+        <button class="tool primary" type="submit">Send</button>
+      </form>
+      <div class="keys ten" id="keys"></div>
+      <p class="hint">Each key sends one character, as if typed in the Arduino serial monitor. Try a letter too: the sketch ignores it.</p>
+    </section>
+  </div>
+
+  <div class="lower">
+    <section class="panel">
+      <h2>GPIO state · read back from the sketch</h2>
+      <div class="tbl-scroll"><table class="data" id="pins"></table></div>
+      <p class="note">Common-cathode display: HIGH lights a segment. With <code>-DCOMMON_ANODE</code> the sketch inverts the levels.</p>
+    </section>
+    <section class="panel">
+      <h2>On the real board</h2>
+      <pre class="out"><span class="cmd">$ cd NN/part6_esp32</span>
+<span class="cmd">$ pio run -t upload &amp;&amp; pio device monitor</span>
+7-segment neural net ready (4-16-7). Type a digit 0-9.
+digit 5 -> input 0101 -> segments A-CD-FG  (A=0.983 ...)</pre>
+      <p class="note">The same <code>main.cpp</code> is built for the ESP32 by PlatformIO (<span id="src-pio"></span>).
+        Only the Arduino functions differ: real GPIOs and UART there, the mock here.</p>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+import { $, el, frame, setStatus, sourceLink, showTip, hideTip, SEG_SHAPES, SEGMENTS } from "./assets/common.js";
+import { EspEngine } from "./assets/engines.js";
+
+frame();
+$("src-sketch").innerHTML = sourceLink("part6_esp32/src/main.cpp", "main.cpp");
+$("src-mock").innerHTML = sourceLink("part6_esp32/sim/Arduino.h", "sim/Arduino.h");
+$("src-pio").innerHTML = sourceLink("part6_esp32/platformio.ini", "platformio.ini");
+
+// Wiring table of the assignment: segment -> GPIO. Only used to draw the wires; the levels come from the sketch.
+const WIRING = { A: 0, B: 4, C: 16, D: 17, E: 5, F: 18, G: 19 };
+const WIRE_COLORS = { A: "#e5484d", B: "#f76b15", C: "#ffc53d", D: "#46a758", E: "#3e8ef0", F: "#a66ee0", G: "#e8e8e8" };
+// ESP32-DevKitC (38 pins), antenna at the top
+const LEFT = ["3V3", "EN", "VP", "VN", "IO34", "IO35", "IO32", "IO33", "IO25", "IO26", "IO27", "IO14", "IO12", "GND", "IO13", "SD2", "SD3", "CMD", "5V"];
+const RIGHT = ["GND", "IO23", "IO22", "TX", "RX", "IO21", "GND", "IO19", "IO18", "IO5", "IO17", "IO16", "IO4", "IO0", "IO2", "IO15", "SD1", "SD0", "CLK"];
+const PIN_Y0 = 110, PIN_STEP = 21, LX = 84, RX = 246;
+const pinY = (i) => PIN_Y0 + i * PIN_STEP;
+
+const svg = $("bench");
+const parts = { wires: {}, flows: {}, rings: {}, segs: {}, gnd: null };
+
+function drawBench() {
+  const defs = el("defs", {}, svg);
+  const glow = el("filter", { id: "glow", x: "-20%", y: "-20%", width: "140%", height: "140%" }, defs);
+  el("feGaussianBlur", { stdDeviation: 2.4, result: "b" }, glow);
+  const merge = el("feMerge", {}, glow);
+  el("feMergeNode", { in: "b" }, merge); el("feMergeNode", { in: "SourceGraphic" }, merge);
+  const segGlow = el("filter", { id: "seg-glow", x: "-30%", y: "-30%", width: "160%", height: "160%" }, defs);
+  el("feGaussianBlur", { stdDeviation: 4, result: "b" }, segGlow);
+  const m2 = el("feMerge", {}, segGlow);
+  el("feMergeNode", { in: "b" }, m2); el("feMergeNode", { in: "SourceGraphic" }, m2);
+
+  // ---- GND wire first (behind everything): left GND pin -> around the board -> display COM
+  const gy = pinY(LEFT.indexOf("GND"));
+  const gndPath = `M${LX},${gy} H44 V540 H690 V484`;
+  parts.gnd = el("path", { d: gndPath, class: "wire", stroke: "#3a3f45" }, svg);
+  parts.gndFlow = el("path", { d: gndPath, class: "flow" }, svg);
+
+  // ---- board
+  el("rect", { x: 70, y: 20, width: 190, height: 500, rx: 8, class: "pcb" }, svg);
+  // antenna trace + module shield
+  el("path", { d: "M112,34 h12 v16 h12 v-16 h12 v16 h12 v-16 h12 v16 h12 v-16 h12", fill: "none", stroke: "#c9a24a", "stroke-width": 2.2 }, svg);
+  el("rect", { x: 104, y: 62, width: 122, height: 142, rx: 3, fill: "#b9bec4", stroke: "#8b9198" }, svg);
+  el("rect", { x: 110, y: 68, width: 110, height: 130, rx: 2, fill: "none", stroke: "#9aa0a7" }, svg);
+  el("text", { x: 165, y: 120, "text-anchor": "middle", fill: "#3b4148", "font-size": 11, "font-weight": 600 }, svg).textContent = "ESP32-WROOM-32";
+  el("text", { x: 165, y: 136, "text-anchor": "middle", fill: "#4d545c", "font-size": 8 }, svg).textContent = "Wi-Fi + BT · 240 MHz";
+  el("text", { x: 165, y: 176, "text-anchor": "middle", fill: "#4d545c", "font-size": 7 }, svg).textContent = "runs: main.cpp + nn.c";
+  // USB-UART chip, regulator, buttons, LED, USB port
+  el("rect", { x: 140, y: 360, width: 50, height: 50, rx: 3, fill: "#22272c", stroke: "#3a4148" }, svg);
+  el("text", { x: 165, y: 389, "text-anchor": "middle", class: "silk-sm" }, svg).textContent = "CP2102";
+  el("rect", { x: 150, y: 300, width: 30, height: 18, rx: 2, fill: "#22272c", stroke: "#3a4148" }, svg);
+  el("text", { x: 165, y: 334, "text-anchor": "middle", class: "silk-sm" }, svg).textContent = "AMS1117";
+  [["EN", 116], ["BOOT", 198]].forEach(([label, x]) => {
+    el("rect", { x: x - 12, y: 448, width: 24, height: 24, rx: 3, fill: "#d8dde2" }, svg);
+    el("circle", { cx: x, cy: 460, r: 7, fill: "#30353b" }, svg);
+    el("text", { x, y: 486, "text-anchor": "middle", class: "silk-sm" }, svg).textContent = label;
+  });
+  el("circle", { cx: 165, cy: 440, r: 4, fill: "#ff3b2f", filter: "url(#glow)" }, svg);
+  el("text", { x: 165, y: 430, "text-anchor": "middle", class: "silk-sm" }, svg).textContent = "PWR";
+  el("rect", { x: 145, y: 504, width: 40, height: 26, rx: 3, fill: "#9aa0a7", stroke: "#6d737a" }, svg);
+  el("text", { x: 165, y: 548, "text-anchor": "middle", class: "silk-sm" }, svg).textContent = "micro-USB";
+  el("text", { x: 165, y: 236, "text-anchor": "middle", class: "silk" }, svg).textContent = "ESP32-DevKitC";
+
+  // ---- pin headers
+  const header = (names, x, side) => names.forEach((name, i) => {
+    const y = pinY(i);
+    const gpio = /^IO(\d+)$/.exec(name)?.[1];
+    el("rect", { x: x - 6, y: y - 6, width: 12, height: 12, rx: 2, fill: "#0b0d0f" }, svg);
+    el("circle", { cx: x, cy: y, r: 3.6, class: "pad" }, svg);
+    if (gpio !== undefined) parts.rings[gpio] = el("circle", { cx: x, cy: y, r: 7.5, class: "pin-hi-ring" }, svg);
+    const label = el("text", side === "L" ? { x: x + 12, y: y + 3, class: "silk" } : { x: x - 12, y: y + 3, "text-anchor": "end", class: "silk" }, svg);
+    label.textContent = name;
+  });
+  header(LEFT, LX, "L");
+  header(RIGHT, RX, "R");
+
+  // ---- wires GPIO -> 330 Ω -> display pin, fanned out without crossings
+  const order = ["G", "F", "E", "D", "C", "B", "A"];        // top to bottom on the right header
+  order.forEach((seg, k) => {
+    const py = pinY(RIGHT.indexOf("IO" + WIRING[seg]));
+    const ry = 150 + k * 50;
+    const turn = ry < py ? 288 + k * 12 : 288 + (order.length - 1 - k) * 12;
+    const d = `M${RX},${py} H${turn} V${ry} H600`;
+    parts.wires[seg] = el("path", { d, class: "wire", stroke: WIRE_COLORS[seg] }, svg);
+    parts.flows[seg] = el("path", { d, class: "flow" }, svg);
+    // resistor 330 Ω: orange orange brown gold
+    el("rect", { x: 398, y: ry - 7, width: 56, height: 14, rx: 6, class: "res-body" }, svg);
+    ["#f08a24", "#f08a24", "#7a4a1d", "#c9a24a"].forEach((c, b) =>
+      el("rect", { x: 408 + b * 10 + (b === 3 ? 6 : 0), y: ry - 7, width: 4, height: 14, fill: c, class: "band" }, svg));
+    el("text", { x: 426, y: ry - 11, "text-anchor": "middle", class: "silk-sm" }, svg).textContent = "330 Ω";
+    const hit = el("path", { d, fill: "none", stroke: "transparent", "stroke-width": 14 }, svg);
+    hit.addEventListener("pointermove", (e) => showTip(e, pinTip(seg)));
+    hit.addEventListener("pointerleave", hideTip);
+  });
+
+  // ---- 7-segment display (common cathode)
+  el("rect", { x: 600, y: 120, width: 190, height: 360, rx: 6, fill: "#0d0f10", stroke: "#2a2e33" }, svg);
+  order.forEach((seg, k) => {
+    const ry = 150 + k * 50;
+    el("rect", { x: 588, y: ry - 2.5, width: 14, height: 5, fill: "#b9bec4" }, svg);
+    el("text", { x: 612, y: ry + 4, class: "silk" }, svg).textContent = seg;
+  });
+  el("rect", { x: 687.5, y: 478, width: 5, height: 10, fill: "#b9bec4" }, svg);
+  el("text", { x: 700, y: 472, class: "silk-sm" }, svg).textContent = "COM (cathode) → GND";
+  const g = el("g", { transform: "translate(632,160) scale(1.25)" }, svg);
+  [...SEGMENTS].forEach((s) => {
+    el("polygon", { points: SEG_SHAPES[s], class: "seg-off" }, g);
+    parts.segs[s] = el("polygon", { points: SEG_SHAPES[s], fill: "#ff3b2f", "fill-opacity": 0, class: "lit", filter: "url(#seg-glow)" }, g);
+  });
+  el("circle", { cx: 152, cy: 192, r: 6, class: "seg-off" }, g);   // decimal point (not wired)
+  el("text", { x: 695, y: 134, "text-anchor": "middle", class: "silk-sm" }, svg).textContent = "5161AS · common cathode";
+}
+
+let esp = null;
+function pinTip(seg) {
+  const p = WIRING[seg];
+  const lvl = esp?.ready ? (esp.pinLevel(p) ? "HIGH (3.3 V)" : "LOW (0 V)") : "–";
+  return `GPIO ${p} → 330 Ω → segment ${seg}\nlevel ${lvl}`;
+}
+
+function refresh() {
+  let any = false;
+  const rows = Object.entries(WIRING).map(([seg, p]) => {
+    const hi = esp.pinLevel(p) === 1, mode = esp.pinMode(p);
+    any ||= hi;
+    parts.wires[seg].classList.toggle("on", hi);
+    parts.flows[seg].classList.toggle("on", hi);
+    parts.rings[p]?.classList.toggle("on", hi);
+    parts.segs[seg].setAttribute("fill-opacity", hi ? 1 : 0);
+    return `<tr><td>${seg}</td><td>GPIO ${p}</td><td>${mode === 1 ? "OUTPUT" : mode === 0 ? "INPUT" : "unset"}</td>` +
+      `<td class="${hi ? "pin-hi" : "off"}">${hi ? "HIGH" : "LOW"}</td></tr>`;
+  });
+  parts.gnd.classList.toggle("on", any);
+  parts.gndFlow.classList.toggle("on", any);
+  $("pins").innerHTML = `<tr><th>Segment</th><th>Pin</th><th>pinMode</th><th>Level</th></tr>` + rows.join("");
+}
+
+const log = [];
+function serial(line) {
+  log.push(line);
+  if (log.length > 200) log.shift();
+  $("serial").textContent = log.join("\n");
+  $("serial").scrollTop = $("serial").scrollHeight;
+}
+function send(text) {
+  if (!esp?.ready) return;
+  for (const ch of text) {
+    serial("> " + ch);
+    esp.send(ch);
+  }
+  esp.send("\n");
+  refresh();
+}
+
+drawBench();
+for (let d = 0; d <= 9; d++) {
+  const k = document.createElement("button");
+  k.type = "button"; k.className = "key"; k.textContent = d;
+  k.addEventListener("click", () => {
+    document.querySelectorAll("#keys .key").forEach((x) => x.classList.toggle("current", x === k));
+    send(String(d));
+  });
+  $("keys").appendChild(k);
+}
+$("serial-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = $("serial-input").value;
+  if (v) send(v);
+  $("serial-input").value = "";
+});
+
+esp = new EspEngine(serial);
+esp.init().then(() => {
+  esp.ready = true;
+  refresh();
+  setStatus("status", "ready", "sketch running (setup() done) · send a digit");
+  send("5");
+  document.querySelectorAll("#keys .key")[5].classList.add("current");
+}).catch((err) => setStatus("status", "error", "could not start the sketch: " + err.message));
+</script>
+</body>
+</html>

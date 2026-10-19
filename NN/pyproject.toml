@@ -1,0 +1,15 @@
+# Makes the `nn` package (Parts 1+2) importable from every part: .venv/bin/pip install -e NN
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "insy-nn"
+version = "1.0.0"
+description = "Neural network from scratch: 4-bit BCD to 7-segment decoder (INSY school project)"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26"]
+
+[tool.setuptools]
+package-dir = {"nn" = "part1_2_python/nn"}
+packages = ["nn"]

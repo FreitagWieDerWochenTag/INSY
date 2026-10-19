@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parts 1+2 · Python</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>Parts 1 + 2 <span>· network from scratch in Python</span></h1>
+    <p class="lede">The unchanged <span id="src-nn"></span> package runs in your browser through Pyodide (CPython + NumPy
+      compiled to WebAssembly). Every click calls <code>NeuralNetwork.forward()</code> on the network loaded with
+      <code>NeuralNetwork.load()</code> from the JSON export. You can also train a new one with <code>train()</code>.</p>
+    <div class="status" id="status"><span class="dot"></span><span class="status-text">loading Python (Pyodide, about 10 MB the first time)…</span></div>
+  </header>
+
+  <div class="seg" role="group" aria-label="Network">
+    <button class="seg-btn" type="button" data-ds="7seg" aria-pressed="true">7-segment 4-16-7</button>
+    <button class="seg-btn" type="button" data-ds="xor" aria-pressed="false">XOR 2-2-1</button>
+    <span style="width:16px"></span>
+    <button class="seg-btn" type="button" data-src="exported" aria-pressed="true">exported model</button>
+    <button class="seg-btn" type="button" data-src="browser" aria-pressed="false" disabled title="train one below first">trained in browser</button>
+  </div>
+
+  <main class="board">
+    <section class="panel">
+      <h2 id="in-title">Input</h2>
+      <div class="bits" id="bits"></div>
+      <p class="code" id="code"></p>
+      <div class="keys" id="keys"></div>
+      <p class="hint" id="in-hint"></p>
+    </section>
+
+    <section class="panel net-panel">
+      <div class="net-head">
+        <h2>Forward pass</h2>
+        <button class="tool" id="animate" type="button">Animate layers</button>
+      </div>
+      <div class="svg-scroll"><svg class="net" id="net" viewBox="0 0 640 470" role="img" aria-label="Network graph"></svg></div>
+      <div class="legend">
+        <span><i style="background:var(--pos)"></i>positive weight</span>
+        <span><i style="background:var(--neg)"></i>negative weight</span>
+        <span>thickness = |w| · brightness = |w · a| (signal that flows)</span>
+        <span><i class="sw-act"></i>fill = activation</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 id="out-title">Output</h2>
+      <div class="display" id="seg-out">
+        <svg class="seven" id="seven" viewBox="0 0 120 200" role="img" aria-label="7-segment display"></svg>
+        <div class="readout" id="readout"></div>
+      </div>
+      <div class="display" id="xor-out" hidden>
+        <div class="big-out" id="xor-value">–</div>
+        <div class="readout" id="xor-readout"></div>
+      </div>
+      <table class="segtable" id="segtable"></table>
+    </section>
+  </main>
+
+  <div class="lower">
+    <section class="panel">
+      <h2>Train in the browser · Part 2</h2>
+      <p class="sub">Runs <code>NeuralNetwork(sizes, seed)</code> + <code>train(epochs, learning_rate, seed)</code> like
+        <span id="src-train"></span>. With the default values you get the exported model again (weights equal up to floating-point rounding, about 1e-14).</p>
+      <div class="form-row">
+        <label>epochs <input id="epochs" type="number" min="100" max="50000" step="100" value="20000"></label>
+        <label>learning rate <input id="lr" type="number" min="0.001" max="10" step="0.05" value="0.1"></label>
+        <label>seed <input id="seed" type="number" min="0" max="9999" step="1" value="0"></label>
+        <button class="tool primary" id="train" type="button" disabled>Train</button>
+      </div>
+      <div class="progress"><b id="progress"></b></div>
+      <div class="status" id="train-status"><span class="dot"></span><span class="status-text">waiting for Python…</span></div>
+    </section>
+    <section class="panel">
+      <h2>Training loss (MSE per epoch)</h2>
+      <svg class="chart" id="chart" viewBox="0 0 560 260" role="img" aria-label="Training loss"></svg>
+      <div class="legend">
+        <span><i class="sw-browser"></i>this browser run</span>
+        <span><i class="sw-exported"></i>run that produced the exported model (recorded by compare_tf.py)</span>
+      </div>
+      <div class="tbl-scroll"><table class="data" id="train-table" style="margin-top:12px"></table></div>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+import { $, frame, InputPanel, NetView, SegDisplay, lossChart, setStatus, sourceLink, getJSON, segmentsOf } from "./assets/common.js";
+import { PyEngine } from "./assets/engines.js";
+
+frame();
+$("src-nn").innerHTML = sourceLink("part1_2_python/nn/neural_network.py", "nn");
+$("src-train").innerHTML = sourceLink("part1_2_python/train_7seg.py", "train_7seg.py") + " / " + sourceLink("part1_2_python/train_xor.py", "train_xor.py");
+
+const py = new PyEngine();
+const view = new NetView($("net"));
+const display = new SegDisplay($("seven"), $("readout"), $("segtable"));
+let dataset = "7seg", source = "exported", panel = null, recorded = null;
+const trainedIn = {};          // dataset -> true once a browser run exists
+const name = () => `${dataset}_${source}`;
+
+function buildPanel() {
+  const seg = dataset === "7seg";
+  panel = new InputPanel({
+    bitsBox: $("bits"), keysBox: $("keys"), codeBox: $("code"),
+    nBits: seg ? 4 : 2, maxKey: seg ? 15 : 3, trained: seg ? 9 : 3, start: seg ? 5 : 1, onChange: forward,
+  });
+  $("in-title").textContent = seg ? "Input · 4-bit BCD" : "Input · 2 bits";
+  $("in-hint").textContent = seg ? "Dashed codes 10–15 were never trained. Check what the net makes of them." : "All four XOR cases are in the training data.";
+  $("out-title").textContent = seg ? "Output · segments A–G" : "Output · x0 XOR x1";
+  $("seg-out").hidden = !seg; $("segtable").hidden = !seg; $("xor-out").hidden = seg;
+}
+
+// Network structure is loaded once per (dataset, source); forward() runs on every click.
+const loaded = {};
+async function ensureLoaded() {
+  const key = name();
+  if (source === "exported" && !loaded[key]) loaded[key] = await py.load(key, `build/models/${dataset}.json`);
+  return loaded[key];
+}
+let ticket = 0;
+async function forward() {
+  const t = ++ticket;
+  const bits = panel.bits.slice();
+  try {
+    const net = await ensureLoaded();
+    const r = await py.forward(name(), bits);
+    if (t !== ticket) return;
+    if (view.net !== net) view.build(net);
+    view.render(r);
+    if (dataset === "7seg") display.render(r.output);
+    else {
+      $("xor-value").textContent = r.output[0].toFixed(4);
+      $("xor-readout").innerHTML = `≥ 0.5 → <strong>${segmentsOf(r.output)[0]}</strong> · target ${bits[0] ^ bits[1]}`;
+    }
+    setStatus("status", "ready", `computed by Python ${await py.init()} · ${source === "exported" ? `models/${dataset}.json` : "network trained in this browser"}` +
+      ` · forward ${r.compute_ms.toFixed(2)} ms`);
+  } catch (err) {
+    setStatus("status", "error", "Python error: " + err.message);
+  }
+}
+function start() {
+  buildPanel();
+  forward();
+}
+
+document.querySelectorAll("[data-ds]").forEach((b) => b.addEventListener("click", () => {
+  dataset = b.dataset.ds;
+  document.querySelectorAll("[data-ds]").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  if (!trainedIn[dataset]) setSource("exported");
+  updateSourceButton();
+  start();
+  drawChart();
+}));
+document.querySelectorAll("[data-src]").forEach((b) => b.addEventListener("click", () => { setSource(b.dataset.src); forward(); }));
+function setSource(s) {
+  source = s;
+  document.querySelectorAll("[data-src]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.src === s ? "true" : "false"));
+}
+function updateSourceButton() {
+  const b = document.querySelector('[data-src="browser"]');
+  b.disabled = !trainedIn[dataset];
+  b.title = trainedIn[dataset] ? "network from your last training run" : "train one below first";
+}
+$("animate").addEventListener("click", () => view.animate());
+
+// ---------- training ----------
+const browserRun = { xor: null, "7seg": null };   // {epochs: [], values: []}
+function drawChart() {
+  const series = [];
+  if (recorded) {
+    const ours = recorded.datasets[dataset].runs.ours;
+    series.push({ key: "exported", short: "exported run", epochs: recorded.history_epochs, values: ours.history });
+  }
+  const b = browserRun[dataset];
+  if (b) series.push({ key: "browser", short: "this browser", epochs: b.epochs, values: b.values });
+  lossChart($("chart"), series, { maxEpoch: Math.max(+$("epochs").value, recorded?.epochs || 0) });
+}
+
+$("train").addEventListener("click", async () => {
+  const epochs = Math.max(1, Math.round(+$("epochs").value)), learningRate = +$("lr").value, seed = Math.round(+$("seed").value);
+  const ds = dataset;
+  const logEvery = Math.max(1, Math.round(epochs / 200));
+  browserRun[ds] = { epochs: [], values: [] };
+  $("train").disabled = true;
+  $("progress").style.width = "0";
+  setStatus("train-status", null, `training ${ds} for ${epochs} epochs in Python…`);
+  // make sure the exported model is loaded so Python can compare the weights
+  if (!loaded[`${ds}_exported`]) loaded[`${ds}_exported`] = await py.load(`${ds}_exported`, `build/models/${ds}.json`);
+  let lastDraw = 0;
+  try {
+    const r = await py.train(`${ds}_browser`, { dataset: ds, epochs, learningRate, seed, logEvery, compareTo: `${ds}_exported` },
+      (epoch, mse) => {
+        browserRun[ds].epochs.push(epoch); browserRun[ds].values.push(mse);
+        $("progress").style.width = (100 * epoch / epochs).toFixed(1) + "%";
+        setStatus("train-status", null, `epoch ${epoch} / ${epochs} · mse ${mse.toFixed(6)}`);
+        if (ds === dataset && performance.now() - lastDraw > 150) { lastDraw = performance.now(); drawChart(); }
+      });
+    // full per-epoch history from train() (thin it out for the chart)
+    const step = Math.max(1, Math.floor(r.history.length / 400));
+    browserRun[ds] = { epochs: [], values: [] };
+    r.history.forEach((v, i) => { if (i % step === 0 || i === r.history.length - 1) { browserRun[ds].epochs.push(i + 1); browserRun[ds].values.push(v); } });
+    loaded[`${ds}_browser`] = r.net;
+    trainedIn[ds] = true;
+    $("progress").style.width = "100%";
+    const correct = r.predictions.filter((p, i) => segmentsOf(p).every((s, k) => s === r.targets[i][k])).length;
+    const same = r.max_param_diff !== undefined && r.max_param_diff < 1e-9;   // only floating-point rounding
+    setStatus("train-status", "ready", `done in ${r.seconds.toFixed(1)} s · final mse ${r.history.at(-1).toExponential(2)} · ${correct}/${r.targets.length} correct`);
+    $("train-table").innerHTML = `<tr><th>Run</th><th>Epochs</th><th>LR</th><th>Seed</th><th>Time</th><th>Final MSE</th><th>Correct</th><th>max |Δ param| vs export</th></tr>` +
+      `<tr><td>this browser</td><td>${epochs}</td><td>${learningRate}</td><td>${seed}</td><td>${r.seconds.toFixed(1)} s</td>` +
+      `<td>${r.history.at(-1).toExponential(2)}</td><td class="${correct === r.targets.length ? "ok" : "bad"}">${correct}/${r.targets.length}</td>` +
+      `<td class="${same ? "ok" : ""}">${r.max_param_diff.toExponential(1)}${same ? " (same model)" : ""}</td></tr>`;
+    if (ds === dataset) { updateSourceButton(); setSource("browser"); forward(); }
+  } catch (err) {
+    setStatus("train-status", "error", "training failed: " + err.message);
+  }
+  $("train").disabled = false;
+  drawChart();
+});
+
+py.init().then((v) => {
+  $("train").disabled = false;
+  setStatus("train-status", "ready", `ready · ${v}`);
+}).catch((err) => {
+  setStatus("status", "error", "could not start Python: " + err.message);
+  setStatus("train-status", "error", "Python unavailable");
+});
+getJSON("build/models/tf_comparison.json").then((d) => { recorded = d; drawChart(); }).catch(() => {});
+start();
+</script>
+</body>
+</html>

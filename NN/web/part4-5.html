@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parts 4+5 · C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>Parts 4 + 5 <span>· forward pass in C</span></h1>
+    <p class="lede">An inference-only C library (<span id="src-lib"></span>). Part 4 reads the network from the
+      <code>.txt</code> export with <code>fscanf</code> at run time. Part 5 compiles the weights in from the generated
+      <code>.h</code> file. Both programs (<span id="src-cli"></span>) are compiled to WebAssembly with Emscripten. Each click runs
+      their <code>main()</code> with the same arguments as on the PC, and the page draws what they print.</p>
+  </header>
+
+  <div class="seg" role="group" aria-label="C program">
+    <button class="seg-btn" type="button" data-engine="txt" aria-pressed="true">Part 4 · weights from 7seg.txt</button>
+    <button class="seg-btn" type="button" data-engine="h" aria-pressed="false">Part 5 · weights from 7seg_net.h</button>
+  </div>
+
+  <main class="board">
+    <section class="panel">
+      <h2>Input · 4-bit BCD</h2>
+      <div class="bits" id="bits"></div>
+      <p class="code" id="code"></p>
+      <div class="keys" id="keys"></div>
+      <p class="hint">Dashed codes 10–15 were never trained.</p>
+    </section>
+    <section class="panel net-panel">
+      <div class="net-head">
+        <h2>Forward pass · computed in C</h2>
+        <button class="tool" id="animate" type="button">Animate layers</button>
+      </div>
+      <div class="status" id="status"><span class="dot"></span><span class="status-text">loading WebAssembly…</span></div>
+      <div class="svg-scroll"><svg class="net" id="net" viewBox="0 0 640 470" role="img" aria-label="Network graph"></svg></div>
+      <div class="legend">
+        <span><i style="background:var(--pos)"></i>positive weight</span>
+        <span><i style="background:var(--neg)"></i>negative weight</span>
+        <span>z and activations from the C program · edges drawn from models/7seg.json (the same weights)</span>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Output · segments A–G</h2>
+      <div class="display">
+        <svg class="seven" id="seven" viewBox="0 0 120 200" role="img" aria-label="7-segment display"></svg>
+        <div class="readout" id="readout"></div>
+      </div>
+      <table class="segtable" id="segtable"></table>
+    </section>
+  </main>
+
+  <div class="lower">
+    <section class="panel">
+      <h2>What the C program printed</h2>
+      <pre class="out" id="stdout"></pre>
+      <details>
+        <summary>models/7seg.txt (Part 4 input)</summary>
+        <pre class="out" id="txt-preview"></pre>
+      </details>
+      <details>
+        <summary>models/7seg_net.h (Part 5 input)</summary>
+        <pre class="out" id="h-preview"></pre>
+      </details>
+    </section>
+    <section class="panel">
+      <h2>All 16 codes · C vs. Python</h2>
+      <p class="sub">Both C builds and the Python network (Pyodide) for every input. The C code uses <code>float</code>,
+        Python uses <code>double</code>.</p>
+      <div class="tbl-scroll"><table class="data" id="all"></table></div>
+      <p class="note" id="all-note"></p>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+import { $, frame, InputPanel, NetView, SegDisplay, setStatus, sourceLink, getJSON, getText, segmentsOf, toBits, PATTERNS } from "./assets/common.js";
+import { CEngine, PyEngine } from "./assets/engines.js";
+
+frame();
+$("src-lib").innerHTML = sourceLink("part4_5_c/lib/nn/nn.c", "lib/nn/nn.c");
+$("src-cli").innerHTML = sourceLink("part4_5_c/nn_cli.c", "nn_cli.c");
+
+const engines = { txt: new CEngine("txt"), h: new CEngine("h") };
+let engine = "txt";
+const view = new NetView($("net"));
+const display = new SegDisplay($("seven"), $("readout"), $("segtable"));
+const netJson = getJSON("build/models/7seg.json");
+
+let ticket = 0;
+async function forward(bits) {
+  const t = ++ticket;
+  try {
+    const r = await engines[engine].forward(bits);
+    if (t !== ticket) return;
+    if (!view.net) view.build(await netJson);
+    view.render(r); display.render(r.output);
+    $("stdout").innerHTML = `<span class="cmd">$ ${r.command}</span>\n` + r.stdout.replace(/[<&]/g, (c) => (c === "<" ? "&lt;" : "&amp;"));
+    setStatus("status", "ready", `computed by C (${engine === "txt" ? "Part 4, nn_load_txt" : "Part 5, nn_init_from_header"}) as WebAssembly · main() ${r.compute_ms.toFixed(2)} ms`);
+  } catch (err) {
+    setStatus("status", "error", "C program error: " + err.message);
+  }
+}
+
+document.querySelectorAll("[data-engine]").forEach((b) => b.addEventListener("click", () => {
+  engine = b.dataset.engine;
+  document.querySelectorAll("[data-engine]").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  forward(panel.bits.slice());
+}));
+$("animate").addEventListener("click", () => view.animate());
+
+async function allCodes() {
+  const codes = Array.from({ length: 16 }, (_, d) => toBits(d));
+  const c = {};
+  for (const k of ["txt", "h"]) c[k] = [];
+  for (const bits of codes) for (const k of ["txt", "h"]) c[k].push((await engines[k].forward(bits)).output);
+  let ref = null;
+  const draw = () => {
+    const shows = (o) => PATTERNS[segmentsOf(o).join("")] ?? "–";
+    const diff = (o, i) => (ref ? Math.max(...o.map((v, s) => Math.abs(v - ref[i][s]))).toExponential(1) : "…");
+    $("all").innerHTML = `<tr><th>Code</th><th>Bits</th><th>C .txt shows</th><th>C .h shows</th><th>|Δ| .txt vs Py</th><th>|Δ| .h vs Py</th></tr>` +
+      codes.map((b, i) => `<tr><td>${i}</td><td>${b.join("")}</td><td>${shows(c.txt[i])}</td><td>${shows(c.h[i])}</td>` +
+        `<td>${diff(c.txt[i], i)}</td><td>${diff(c.h[i], i)}</td></tr>`).join("");
+    if (ref) {
+      const max = Math.max(...["txt", "h"].flatMap((k) => c[k].flatMap((o, i) => o.map((v, s) => Math.abs(v - ref[i][s])))));
+      const correct = codes.slice(0, 10).filter((_, d) => shows(c.txt[d]) === d && shows(c.h[d]) === d).length;
+      $("all-note").textContent = `${correct}/10 digits correct in both C builds · largest difference to Python ${max.toExponential(2)}` +
+        " (tolerance in part4_5_c/tests: 1e-5)";
+    } else $("all-note").textContent = "waiting for Python…";
+  };
+  draw();
+  try {
+    const py = new PyEngine();
+    await py.init();
+    await py.load("7seg", "build/models/7seg.json");
+    ref = await py.predictAll("7seg", codes);
+  } catch (err) {
+    $("all-note").textContent = "Python unavailable: " + err.message;
+    return;
+  }
+  draw();
+}
+
+getText("build/models/7seg.txt").then((t) => { $("txt-preview").textContent = t.split("\n").slice(0, 10).join("\n") + "\n…"; });
+getText("build/models/7seg_net.h").then((t) => { $("h-preview").textContent = t.split("\n").slice(0, 22).join("\n") + "\n…"; });
+const panel = new InputPanel({ bitsBox: $("bits"), keysBox: $("keys"), codeBox: $("code"), onChange: forward });
+forward(panel.bits.slice()).then(allCodes);
+</script>
+</body>
+</html>
