@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05164d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<title>INSY Projects</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>INSY <span>· school projects</span></h1>
+    <p class="lede">Projects for INSY, each in its own folder of the repository with its own interactive page and its own
+      prompt log. Everything they share (design, rules, tools) lives here.</p>
+  </header>
+
+  <section class="section" aria-labelledby="general-title">
+    <h2 class="section-title" id="general-title">General</h2>
+    <div class="cards">
+      <a class="panel card" href="design.html">
+        <span class="num">Design</span>
+        <h3>Design system</h3>
+        <p>Apple-like pages in navy and white, yellow only where something is active. Tokens, type, components and rules for every project.</p>
+        <span class="more">DESIGN.md →</span>
+      </a>
+      <a class="panel card" href="log.html">
+        <span class="num">Prompt log</span>
+        <h3>General prompt log</h3>
+        <p>Prompts that shaped the repository itself: its structure, the design, the landing page and the tools, with measured tokens and cost.</p>
+        <span class="more">docs/PROMPT_LOG.md →</span>
+      </a>
+      <div class="panel card">
+        <span class="num">Rules</span>
+        <h3>How the repo works</h3>
+        <ul class="rules">
+          <li>One folder per project; inside: <code>docs/</code>, <code>models/</code>, <code>web/</code> and one folder per assignment part.</li>
+          <li>Every prompt gets a log entry: in the project it worked on, or in the general log.</li>
+          <li>Code and docs in English; every page runs the project's real code.</li>
+          <li>Every push to <code>main</code> is tested and deployed by GitHub Actions.</li>
+        </ul>
+        <span class="more" id="rules-link"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="projects-title">
+    <h2 class="section-title" id="projects-title">Projects</h2>
+    <div class="cards">
+      <a class="panel card" href="NN/">
+        <span class="num">NN · Parts 1–6</span>
+        <h3>Neural network: BCD → 7-segment decoder</h3>
+        <p>A network written from scratch in Python, compared with TensorFlow, run in C and on an ESP32. Every page runs the real code.</p>
+        <span class="runs">Python · TensorFlow · C · ESP32 · WebAssembly</span>
+        <span class="more">Open the project →</span>
+      </a>
+    </div>
+  </section>
+</div>
+<script type="module">
+import { $, frame, sourceLink } from "./assets/site.js";
+frame();
+$("rules-link").innerHTML = "Details: " + sourceLink("CLAUDE.md", "CLAUDE.md") + " · " + sourceLink("README.md", "README.md");
+</script>
+</body>
+</html>

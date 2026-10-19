@@ -31,14 +31,13 @@ cd NN/part6_esp32 && pio run -t upload              # Part 6: build/flash the ES
 NN/web/build.sh                                     # web page build: models + Python code + WebAssembly (needs emcc)
 python3 -m http.server -d NN/web 8000               # preview the web page on http://localhost:8000
 cd NN && ../.venv/bin/pytest                        # all tests (see pytest.ini; wasm tests need node + web build)
-.venv/bin/python NN/tools/token_usage.py            # token usage per prompt over all Claude sessions of this repo
+.venv/bin/python tools/token_usage.py               # token usage per prompt (repo tool, writes every prompt log)
 ```
 
 ## Layout
 ```
-docs/              Aufgabenstellung.pdf, PROMPT_LOG.md
+docs/              Aufgabenstellung.pdf, PROMPT_LOG.md (NN's prompt log), token_usage.json
 models/            exported networks, shared by all parts (json, txt, .h, keras, TF weights, comparison)
-tools/             token_usage.py (+ its test)
 part1_2_python/    nn/ (neural_network.py, datasets.py, paths.py), train_*/verify_* scripts, tests/
 part3_tensorflow/  tf_net.py, compare_tf.py, tests/
 part4_5_c/         lib/nn (nn.h, nn.c, nn_from_header.h), nn_cli.c, test_*.c, Makefile (native + `web` targets), tests/
@@ -64,11 +63,5 @@ conftest.py        shared fixture: small trained net compiled into all C program
 - TF weights (`*_tf_weights.json`): `{"input_size", "layers": [{"units", "activation", "kernel", "bias"}]}`, Keras layout.
 
 ## Work log (mandatory)
-After **every** user prompt, append an entry to `NN/docs/PROMPT_LOG.md`:
-`## #N – YYYY-MM-DD – <prompt summary>`, what was done, files changed, decisions, and the token
-numbers for that prompt from `NN/tools/token_usage.py` (measured, never estimated). The script
-cannot see the turn that is still running, so each entry is completed with the final numbers of the
-previous prompt at the start of the next one. Cross-check with `/cost`.
-Then run `.venv/bin/python NN/tools/token_usage.py --write-log`: it regenerates the cost tables (by category and
-by prompt, with $) at the top of the log. Never edit the block between `<!-- COSTS:START/END -->` by hand.
-Prices live in `PRICES` in `NN/tools/token_usage.py`; add a model there before using it, or its calls show up unpriced.
+The rule is in the repo root's CLAUDE.md. NN's entries go to `NN/docs/PROMPT_LOG.md`; work on the repo itself (design, rules,
+start page, tools) goes to the general log `docs/PROMPT_LOG.md` in the repo root. Tokens: `.venv/bin/python tools/token_usage.py --write-log`.

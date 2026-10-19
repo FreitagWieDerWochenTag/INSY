@@ -13,7 +13,8 @@
 <div class="wrap">
   <header class="page">
     <h1>Prompt log <span>· tokens &amp; cost</span></h1>
-    <p class="lede">This project was built with Claude Code. After every prompt, the work log records what was done, and
+    <p class="lede">This is the prompt log of the NN project; work on the repository itself (design, rules) is in the general log on the
+      INSY start page. After every prompt, the work log records what was done, and
       <span id="src-tool"></span> measures the tokens of each prompt from the Claude Code session logs, never estimated.
       Source: <span id="src-log"></span>.</p>
     <p class="note" id="updated"></p>
@@ -48,10 +49,10 @@
 </div>
 
 <script type="module">
-import { $, el, frame, showTip, hideTip, sourceLink, getJSON, getText } from "./assets/common.js";
+import { $, el, frame, showTip, hideTip, sourceLink, sourceUrl, getJSON, getText } from "./assets/common.js";
 
 frame();
-$("src-tool").innerHTML = sourceLink("tools/token_usage.py", "token_usage.py");
+$("src-tool").innerHTML = `<a href="${sourceUrl("").replace("/NN/", "/")}tools/token_usage.py" target="_blank" rel="noopener"><code>tools/token_usage.py</code></a>`;
 $("src-log").innerHTML = sourceLink("docs/PROMPT_LOG.md", "docs/PROMPT_LOG.md");
 
 const usd = (v) => "$" + v.toFixed(2);

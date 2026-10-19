@@ -52,8 +52,10 @@ export function frame() {
   const bar = document.createElement("nav");
   bar.className = "topbar";
   bar.setAttribute("aria-label", "Parts");
+  // On GitHub Pages the project sits below the INSY start page (general design, rules, general prompt log)
+  const up = location.hostname.endsWith(".github.io") ? `<a class="tab up" href="../">INSY</a>` : "";
   bar.innerHTML = `<div class="topbar-inner">
-      <a class="brand" href="index.html"><svg viewBox="0 0 120 200" aria-hidden="true">${
+      ${up}<a class="brand" href="index.html"><svg viewBox="0 0 120 200" aria-hidden="true">${
         Object.entries(SEG_SHAPES).map(([s, p]) => `<polygon points="${p}" fill="${"BCFG".includes(s) ? "var(--accent)" : "var(--line)"}"/>`).join("")
       }</svg>BCD Decoder Net</a>
       <div class="tabs">${PAGES.map(([href, label, tech]) =>

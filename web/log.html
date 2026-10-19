@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05164d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<title>INSY Prompt Log</title>
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>Prompt log <span>· general</span></h1>
+    <p class="lede">Prompts that worked on the repository itself: its structure, the rules, the design and the tools. Each project
+      has its own log on its own site. <span id="src-tool"></span> measures the tokens of each prompt from the Claude Code session
+      logs, never estimated, and splits a prompt's API calls by the files they touched. Source: <span id="src-log"></span>.</p>
+    <p class="note" id="updated"></p>
+  </header>
+
+  <section class="panel">
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <div class="lower">
+    <section class="panel">
+      <h2>Cost by category</h2>
+      <svg class="chart" id="by-cat" viewBox="0 0 560 230" role="img" aria-label="Cost by category"></svg>
+      <p class="note" id="cat-note"></p>
+    </section>
+    <section class="panel">
+      <h2>Cost per prompt</h2>
+      <svg class="chart" id="by-prompt" viewBox="0 0 560 230" role="img" aria-label="Cost per prompt"></svg>
+      <p class="note">Hover a bar for the prompt. Prompt numbers are shared with the project logs; only this log's part of each prompt is counted.</p>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>By prompt</h2>
+    <div class="tbl-scroll"><table class="data" id="prompts"></table></div>
+  </section>
+
+  <section class="panel">
+    <h2>Work log</h2>
+    <div class="md" id="log">loading…</div>
+  </section>
+</div>
+
+<script type="module">
+import { $, el, frame, showTip, hideTip, sourceLink, getJSON, getText } from "./assets/site.js";
+
+frame();
+$("src-tool").innerHTML = sourceLink("tools/token_usage.py", "tools/token_usage.py");
+$("src-log").innerHTML = sourceLink("docs/PROMPT_LOG.md", "docs/PROMPT_LOG.md");
+
+const usd = (v) => "$" + v.toFixed(2);
+const num = (v) => v.toLocaleString("en-US");
+const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+function barsH(svg, rows) {   // horizontal bars: [{label, value, tip}]
+  svg.innerHTML = "";
+  const W = 560, L = 150, R = 60, rowH = 30, T = 6;
+  const H = T + rows.length * rowH + 6;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const max = Math.max(...rows.map((r) => r.value), 1e-9);
+  rows.forEach((r, i) => {
+    const y = T + i * rowH;
+    const w = Math.max(2, (W - L - R) * r.value / max);
+    el("text", { x: L - 10, y: y + 18, "text-anchor": "end" }, svg).textContent = r.label;
+    const bar = el("rect", { x: L, y: y + 6, width: w, height: 16, rx: 4, class: "barv" }, svg);
+    el("text", { x: L + w + 6, y: y + 18, class: "lbl" }, svg).textContent = usd(r.value);
+    bar.addEventListener("pointermove", (e) => showTip(e, r.tip));
+    bar.addEventListener("pointerleave", hideTip);
+  });
+}
+
+function barsV(svg, rows) {   // vertical bars per prompt: [{n, value, tip}]
+  svg.innerHTML = "";
+  const W = 560, H = 230, L = 44, R = 8, T = 10, B = 26;
+  const max = Math.max(...rows.map((r) => r.value), 1e-9);
+  const step = Math.ceil(max / 4 / 0.5) * 0.5 || 0.5;
+  const top = step * 4;
+  const y = (v) => T + (H - T - B) * (1 - v / top);
+  for (let k = 0; k <= 4; k++) {
+    el("line", { x1: L, x2: W - R, y1: y(k * step), y2: y(k * step), class: "grid" }, svg);
+    el("text", { x: L - 6, y: y(k * step) + 3, "text-anchor": "end" }, svg).textContent = "$" + (k * step).toFixed(step < 1 ? 1 : 0);
+  }
+  const slot = (W - L - R) / rows.length, bw = Math.max(3, Math.min(28, slot - 4));
+  rows.forEach((r, i) => {
+    const x = L + i * slot + (slot - bw) / 2;
+    const h = Math.max(1, y(0) - y(r.value));
+    const bar = el("rect", { x, y: y(0) - h, width: bw, height: h, rx: Math.min(4, bw / 2), class: "barv" }, svg);
+    bar.addEventListener("pointermove", (e) => showTip(e, r.tip));
+    bar.addEventListener("pointerleave", hideTip);
+    if (rows.length <= 20 || i % 2 === 0) el("text", { x: x + bw / 2, y: H - B + 14, "text-anchor": "middle" }, svg).textContent = "#" + r.n;
+  });
+}
+
+const data = await getJSON("build/token_usage.json");
+const t = data.total;
+$("updated").textContent = `Last updated ${data.updated} · prices for ${data.model}: input $${data.prices_per_mtok.input}, output $${data.prices_per_mtok.output}, ` +
+  `cache read $${data.prices_per_mtok.cache_read}, cache write $${data.prices_per_mtok.cache_write_1h} per 1M tokens. The prompt running at that time is only partly counted.`;
+$("stats").innerHTML = [
+  [usd(t.cost), "total API cost"],
+  [data.by_prompt.length, "prompts"],
+  [num(t.calls), "API calls"],
+  [num(t.output), "output tokens"],
+  [(t.cache_read / 1e6).toFixed(1) + " M", "cache-read tokens"],
+].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+
+const cats = data.by_category.filter((c) => c.calls);
+barsH($("by-cat"), cats.map((c) => ({
+  label: c.category, value: c.cost,
+  tip: `${c.category}\n${usd(c.cost)} · ${(100 * c.cost / t.cost).toFixed(0)} %\n${c.calls} API calls\n${num(c.output)} output tokens`,
+})));
+$("cat-note").textContent = "Planning = plan mode and questions · Implementation = code edits and commands · Training & testing = training, " +
+  "verification, tests · Documentation = Markdown and this log · Research = reading files · Answers = replies without tools.";
+const short = (s, n = 60) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
+barsV($("by-prompt"), data.by_prompt.map((p) => ({
+  n: p.n, value: p.cost, tip: `#${p.n} ${short(p.prompt, 40)}\n${usd(p.cost)} · ${p.calls} API calls\n${num(p.output)} output tokens`,
+})));
+$("prompts").innerHTML = `<tr><th>#</th><th>Prompt</th><th>API calls</th><th>Output</th><th>Cache read</th><th>Cost</th></tr>` +
+  data.by_prompt.map((p) => `<tr><td>${p.n}</td><td style="text-align:left">${esc(short(p.prompt, 70))}</td><td>${p.calls}</td>` +
+    `<td>${num(p.output)}</td><td>${num(p.cache_read)}</td><td>${usd(p.cost)}</td></tr>`).join("") +
+  `<tr><td></td><td style="text-align:left"><strong>Total</strong></td><td><strong>${t.calls}</strong></td><td><strong>${num(t.output)}</strong></td>` +
+  `<td><strong>${num(t.cache_read)}</strong></td><td><strong>${usd(t.cost)}</strong></td></tr>`;
+
+// the work log itself; its generated cost block is shown above as charts and table
+const md = (await getText("build/PROMPT_LOG.md")).replace(/<!-- COSTS:START -->[\s\S]*?<!-- COSTS:END -->/, "");
+$("log").innerHTML = window.marked ? window.marked.parse(md) : `<pre>${esc(md)}</pre>`;
+</script>
+</body>
+</html>

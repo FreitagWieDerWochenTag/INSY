@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05164d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<title>INSY Design</title>
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>Design <span>· for every INSY project</span></h1>
+    <p class="lede">Calm pages like Apple's product pages. The colors are inspired by Lufthansa's current look: navy and white as the base,
+      yellow only where something is active. Source: <span id="src-design"></span>. A visual version with live component previews
+      is the <strong>INSY Design System</strong> in Claude Design.</p>
+  </header>
+
+  <section class="panel">
+    <h2>Colors · this theme</h2>
+    <p class="sub">Read live from the page's tokens, so they switch with light / dark mode.</p>
+    <div class="swatches" id="swatches"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Type</h2>
+    <div class="type-scale">
+      <div><span class="t-title">Parts 1 + 2</span><small>title-1 · 52 px · 700</small></div>
+      <div><span class="t-title3">Network from scratch</span><small>title-3 · 21 px · 700</small></div>
+      <div><span class="t-head">Forward pass</span><small>headline · 17 px · 600</small></div>
+      <div><span class="t-body">Every click calls NeuralNetwork.forward() on the exported network.</span><small>body · 16 px · 400</small></div>
+      <div><span class="t-data">0.9831  0.0199  1.0000  0.9786</span><small>data · 13 px mono · tabular</small></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>DESIGN.md</h2>
+    <div class="md" id="design">loading…</div>
+  </section>
+</div>
+<script type="module">
+import { $, frame, sourceLink, getText, esc } from "./assets/site.js";
+frame();
+$("src-design").innerHTML = sourceLink("DESIGN.md", "DESIGN.md");
+
+const TOKENS = [
+  ["bg-2", "ground"], ["surface", "cards"], ["ink", "headings"], ["text", "body text"], ["muted", "secondary text"],
+  ["primary", "buttons, selected"], ["accent", "active / on"], ["accent-ink", "yellow text"],
+  ["s1", "data 1, positive"], ["s2", "data 2, negative"], ["s3", "data 3"], ["good", "ready"], ["bad", "error"], ["hardware", "displays, PCB"],
+];
+function swatches() {
+  const css = getComputedStyle(document.documentElement);
+  $("swatches").innerHTML = TOKENS.map(([name, use]) => {
+    const value = css.getPropertyValue("--" + name).trim();
+    return `<div class="swatch"><i style="background:var(--${name})"></i><b>--${name}</b><span>${use}</span><code>${value}</code></div>`;
+  }).join("");
+}
+swatches();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", swatches);
+
+const md = await getText("build/DESIGN.md");
+$("design").innerHTML = window.marked ? window.marked.parse(md.replace(/^# .*\n/, "")) : `<pre>${esc(md)}</pre>`;
+</script>
+</body>
+</html>

@@ -330,3 +330,5 @@ svg.bench-svg { width: 100%; min-width: 640px; height: auto; display: block; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+.tab.up { color: var(--muted); }
+.tab.up::before { content: "‹ "; }

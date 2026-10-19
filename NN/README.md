@@ -14,7 +14,7 @@ Python via Pyodide, C and the ESP32 sketch via WebAssembly, and the Keras weight
 | 6 | [part6_esp32](part6_esp32/) | Arduino sketch for an ESP32: serial digit → network → 7 GPIOs → display | builds with PlatformIO |
 
 Shared folders: `models/` (all exported networks), `docs/` (assignment, [prompt log](docs/PROMPT_LOG.md)),
-`tools/` (token usage of the Claude Code sessions), `web/` (the interactive page).
+`web/` (the interactive page). The token tool and the general prompt log are in the repo root.
 
 ## Run it
 From the repository root:

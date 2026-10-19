@@ -14,9 +14,9 @@ All sessions of this project are combined in chronological order, so prompt numb
 across sessions. Sessions without a single prompt (e.g. only an automatic title call) are skipped.
 
 Usage:
-    python NN/tools/token_usage.py              # print tables for all sessions of this project
-    python NN/tools/token_usage.py --write-log  # also write the cost tables into NN/docs/PROMPT_LOG.md + token_usage.json
-    python NN/tools/token_usage.py path/to/session.jsonl
+    python tools/token_usage.py              # print tables for all sessions of this project
+    python tools/token_usage.py --write-log  # also write the cost tables into every prompt log (LOGS)
+    python tools/token_usage.py path/to/session.jsonl
 """
 
 import argparse
@@ -27,10 +27,26 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]  # the NN project folder
-REPO = ROOT.parent  # Claude Code runs in the repo root, so its sessions are stored under that path
-LOG_FILE = ROOT / "docs" / "PROMPT_LOG.md"
-JSON_FILE = ROOT / "docs" / "token_usage.json"  # same numbers for the Log page of the website
+REPO = Path(__file__).resolve().parents[1]  # the repo root; Claude Code runs here, so its sessions are stored under it
+# One prompt log per project plus one for general work (design, repo rules, landing page). Each log folder holds
+# PROMPT_LOG.md (entries + generated cost block) and token_usage.json (the same numbers for the Log page).
+LOGS = {"General": REPO / "docs", "NN": REPO / "NN" / "docs"}
+
+# Which log a prompt's calls go to when a call doesn't show it by itself (see project_of_call).
+# Matched by the prompt's start; everything not listed belongs to NN (the first project, before the repo existed).
+PROMPT_PROJECT = [
+    ("There are three things that need to be changed", "General"),   # redesign, DESIGN.md, Claude Design
+    ("now it looks quite good but there is one last thing", "General"),  # landing page + log structure
+]
+# Prompts before this one were all NN: the repo (and the general log) did not exist yet.
+FIRST_REPO_PROMPT = "There are a few things I want to have changed"
+# A call that touches these paths belongs to that log, no matter which prompt it is in. Only path-like arguments
+# count (file paths, shell commands, URLs), not the content of a file being written.
+PATH_KEYS = ("file_path", "file_paths", "path", "paths", "notebook_path", "command", "root", "url", "localDir")
+NN_PATHS = re.compile(r"INSY/NN\b|(?<![\w./-])NN/|part1_2_python|part3_tensorflow|part4_5_c|part6_esp32|NN/web|/models/")
+GENERAL_PATHS = re.compile(r"DESIGN\.md|INSY/(CLAUDE\.md|README\.md|index\.html|docs/|web/|tools/|\.github)|"
+                           r"(?<![\w./-])(\.github|web/index|docs/PROMPT_LOG|tools/token_usage)|scratchpad/ds/|artifact/KNZuCVMKkjNtotXPJXWULN|"
+                           r'(^|[\s;&("])(git|gh) ')
 BLOCK_START, BLOCK_END = "<!-- COSTS:START -->", "<!-- COSTS:END -->"
 REJECTION_MARKER = "the user said:"
 
@@ -92,6 +108,33 @@ def cost(call):
 
 TRAINING = re.compile(r"train_|verify_|compare_tf|make .*test|pio run|test_xor|test_7seg|pytest|/api/|7seg_net\.h|check\.c")
 DOCS = re.compile(r"PROMPT_LOG|CLAUDE\.md|token_usage")
+
+
+def project_of_call(call, default):
+    """The log a call belongs to: NN or General by the paths its tools touched, else the prompt's default."""
+    text = " ".join(json.dumps(inp.get(k)) for _, inp in call.tools for k in PATH_KEYS if inp.get(k))
+    nn, general = bool(NN_PATHS.search(text)), bool(GENERAL_PATHS.search(text))
+    if nn != general:
+        return "NN" if nn else "General"
+    return default
+
+
+def prompt_project(text):
+    return next((proj for start, proj in PROMPT_PROJECT if text.strip().startswith(start)), "NN")
+
+
+def split_by_log(prompts):
+    """{log: [(n, text, calls)]} with the global prompt number n; calls are split by project_of_call."""
+    logs = {name: [] for name in LOGS}
+    repo_exists = False
+    for n, (text, calls) in enumerate(prompts, start=1):
+        repo_exists = repo_exists or text.strip().startswith(FIRST_REPO_PROMPT)
+        default = prompt_project(text)
+        for name in LOGS:
+            mine = [c for c in calls if (project_of_call(c, default) if repo_exists else "NN") == name]
+            if mine:
+                logs[name].append((n, text, mine))
+    return logs
 
 
 def classify(call):
@@ -241,15 +284,15 @@ def snippet(text, width=48):
 
 
 def build_tables(prompts):
-    """Return (by_category, by_prompt, total) summaries."""
-    all_calls = [c for _, calls in prompts for c in calls]
+    """Return (by_category, by_prompt, total) summaries of [(n, text, calls)]."""
+    all_calls = [c for _, _, calls in prompts for c in calls]
     by_category = {cat: summarize([c for c in all_calls if classify(c) == cat]) for cat in CATEGORIES}
-    by_prompt = [(snippet(text), summarize(calls)) for text, calls in prompts]
+    by_prompt = [(n, snippet(text), summarize(calls)) for n, text, calls in prompts]
     total = summarize(all_calls)
     # every call is counted exactly once in both breakdowns
     for key in ("calls", "output", "cache_read"):
         assert sum(s[key] for s in by_category.values()) == total[key]
-        assert sum(s[key] for _, s in by_prompt) == total[key]
+        assert sum(s[key] for _, _, s in by_prompt) == total[key]
     return by_category, by_prompt, total
 
 
@@ -265,7 +308,8 @@ def render_markdown(by_category, by_prompt, total):
         BLOCK_START,
         "## API tokens & cost",
         "",
-        "*Generated by `python NN/tools/token_usage.py --write-log`. Do not edit by hand.*",
+        "*Generated by `python tools/token_usage.py --write-log`. Do not edit by hand. Prompt numbers are shared by all "
+        "prompt logs of the repo; a prompt that did work in several places shows up in each log with the calls of that part.*",
         "",
         "| " + " | ".join(head) + " |",
         "|" + "---|" * 2 + "---:|" * (len(head) - 2),
@@ -280,8 +324,8 @@ def render_markdown(by_category, by_prompt, total):
         "| # | Prompt | API calls | Output | Cache read | Cost |",
         "|---:|---|---:|---:|---:|---:|",
     ]
-    lines += [f"| {i} | {text.replace('|', '/')} | {s['calls']} | {s['output']:,} | {s['cache_read']:,} | ${s['cost']:.2f} |"
-              for i, (text, s) in enumerate(by_prompt, start=1)]
+    lines += [f"| {n} | {text.replace('|', '/')} | {s['calls']} | {s['output']:,} | {s['cache_read']:,} | ${s['cost']:.2f} |"
+              for n, text, s in by_prompt]
     notes = [
         "",
         "Category rules: **Planning** = plan mode or questions/plan approval · **Training & testing** = training, "
@@ -307,20 +351,20 @@ def to_json(by_category, by_prompt, total):
         "prices_per_mtok": PRICES["claude-opus-5-5"],
         "total": total,
         "by_category": [{"category": cat, **s} for cat, s in by_category.items()],
-        "by_prompt": [{"n": i, "prompt": text, **s} for i, (text, s) in enumerate(by_prompt, start=1)],
+        "by_prompt": [{"n": n, "prompt": text, **s} for n, text, s in by_prompt],
     }
 
 
-def write_log(markdown):
+def write_log(log_file, markdown):
     """Replace the cost block in PROMPT_LOG.md, or insert it after the intro on first use."""
-    text = LOG_FILE.read_text()
+    text = log_file.read_text()
     if BLOCK_START in text:
         pattern = re.compile(re.escape(BLOCK_START) + ".*?" + re.escape(BLOCK_END), re.S)
         text = pattern.sub(lambda _: markdown, text, count=1)
     else:
         head, sep, rest = text.partition("\n---\n")
         text = f"{head}\n{markdown}\n{sep}{rest}" if sep else f"{text}\n{markdown}\n"
-    LOG_FILE.write_text(text)
+    log_file.write_text(text)
 
 
 def print_console(by_category, by_prompt, total):
@@ -330,25 +374,29 @@ def print_console(by_category, by_prompt, total):
         print(f"{cat:<22}{s['calls']:>6}" + "".join(f"{s[k]:>13,}" for k, _ in TOKEN_FIELDS) + f"{'$' + format(s['cost'], '.2f'):>10}")
     print(f"{'TOTAL':<22}{total['calls']:>6}" + "".join(f"{total[k]:>13,}" for k, _ in TOKEN_FIELDS)
           + f"{'$' + format(total['cost'], '.2f'):>10}\n")
-    for i, (text, s) in enumerate(by_prompt, start=1):
-        print(f"{i:>2}  {s['calls']:>3} calls  {s['output']:>7,} out  {'$' + format(s['cost'], '.2f'):>7}  {text}")
+    for n, text, s in by_prompt:
+        print(f"{n:>2}  {s['calls']:>3} calls  {s['output']:>7,} out  {'$' + format(s['cost'], '.2f'):>7}  {text}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Token usage and cost of the Claude Code sessions")
     parser.add_argument("log", nargs="?", help="one session .jsonl (default: all sessions of this project)")
-    parser.add_argument("--write-log", action="store_true", help=f"write the tables into {LOG_FILE.name}")
+    parser.add_argument("--write-log", action="store_true", help="write the tables into every PROMPT_LOG.md (see LOGS)")
     args = parser.parse_args()
 
     paths = [Path(args.log)] if args.log else project_logs()
     prompts = collect_sessions(paths)
-    print()
-    tables = build_tables(prompts)
-    print_console(*tables)
-    if args.write_log:
-        write_log(render_markdown(*tables))
-        JSON_FILE.write_text(json.dumps(to_json(*tables), indent=1) + "\n")
-        print(f"\nwrote cost tables to {LOG_FILE.relative_to(ROOT)} and {JSON_FILE.relative_to(ROOT)}")
+    for name, numbered in split_by_log(prompts).items():
+        print(f"\n=== {name} log ===")
+        tables = build_tables(numbered)
+        print_console(*tables)
+        if args.write_log:
+            folder = LOGS[name]
+            write_log(folder / "PROMPT_LOG.md", render_markdown(*tables))
+            data = to_json(*tables)
+            data["log"] = name
+            (folder / "token_usage.json").write_text(json.dumps(data, indent=1) + "\n")
+            print(f"wrote cost tables to {(folder / 'PROMPT_LOG.md').relative_to(REPO)} and token_usage.json")
 
 
 if __name__ == "__main__":

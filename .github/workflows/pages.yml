@@ -1,5 +1,5 @@
 # Builds the web page of every project, runs the tests and publishes everything to GitHub Pages:
-#   https://<owner>.github.io/INSY/       index.html (list of projects)
+#   https://<owner>.github.io/INSY/       web/ (start page: general design, rules and prompt log, list of projects)
 #   https://<owner>.github.io/INSY/NN/    NN/web (neural network, Parts 1-6)
 name: Build, test and deploy pages
 
@@ -30,12 +30,16 @@ jobs:
         run: pip install -r NN/requirements.txt -e NN
       - name: Build the NN web page (copies models + Python code, compiles C and the ESP32 sketch to WebAssembly)
         run: NN/web/build.sh
+      - name: Build the general site (copies DESIGN.md and the general prompt log)
+        run: web/build.sh
       - name: Tests (Python, C, ESP32 host build, WebAssembly in Node)
         run: cd NN && pytest -q
+      - name: Tests of the repo tools (token usage)
+        run: pytest -q tools
       - name: Assemble the site
         run: |
           mkdir -p _site/NN
-          cp index.html _site/
+          cp -r web/*.html web/assets web/build _site/
           cp -r NN/web/*.html NN/web/assets NN/web/build _site/NN/
       - uses: actions/upload-pages-artifact@v3
         with:

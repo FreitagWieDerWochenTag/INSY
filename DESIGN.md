@@ -76,7 +76,8 @@ Previews and usage notes for each: see the Claude Design link above; the classes
 2. No web fonts. Use `var(--font)`, `var(--font-display)`, `var(--font-mono)`.
 3. Every color comes from a token; no literal colors in components (hardware drawings such as a PCB are the exception).
 4. Charts: series in the order `--s1`, `--s2`, `--s3`; run the dataviz palette validator if you add colors.
-5. Add the project to the landing page `index.html` and to `.github/workflows/pages.yml`.
+5. Add the project to the start page (`web/index.html`, `PROJECTS` in `web/assets/site.js`), to `.github/workflows/pages.yml`
+   and to `LOGS` in `tools/token_usage.py` (its own prompt log in `<Project>/docs/`).
 
 ## Tokens (copy-paste)
 
