@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05164d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
 <title>Parts 1+2 · Python</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -15,15 +15,18 @@
     <p class="lede">The unchanged <span id="src-nn"></span> package runs in your browser through Pyodide (CPython + NumPy
       compiled to WebAssembly). Every click calls <code>NeuralNetwork.forward()</code> on the network loaded with
       <code>NeuralNetwork.load()</code> from the JSON export. You can also train a new one with <code>train()</code>.</p>
-    <div class="status" id="status"><span class="dot"></span><span class="status-text">loading Python (Pyodide, about 10 MB the first time)…</span></div>
+    <div class="status" id="status"><span class="dot"></span><span class="status-text">starting Python…</span></div>
   </header>
 
+  <div class="controls">
   <div class="seg" role="group" aria-label="Network">
     <button class="seg-btn" type="button" data-ds="7seg" aria-pressed="true">7-segment 4-16-7</button>
     <button class="seg-btn" type="button" data-ds="xor" aria-pressed="false">XOR 2-2-1</button>
-    <span style="width:16px"></span>
+  </div>
+  <div class="seg" role="group" aria-label="Model">
     <button class="seg-btn" type="button" data-src="exported" aria-pressed="true">exported model</button>
     <button class="seg-btn" type="button" data-src="browser" aria-pressed="false" disabled title="train one below first">trained in browser</button>
+  </div>
   </div>
 
   <main class="board">
@@ -40,10 +43,11 @@
         <h2>Forward pass</h2>
         <button class="tool" id="animate" type="button">Animate layers</button>
       </div>
-      <div class="svg-scroll"><svg class="net" id="net" viewBox="0 0 640 470" role="img" aria-label="Network graph"></svg></div>
+      <div class="svg-scroll"><svg class="net" id="net" viewBox="0 0 640 470" role="img" aria-label="Network graph"></svg>
+        <div class="loading-veil" id="veil"><div><b>Python is starting</b><span id="veil-text">first visit: about 12 MB, then cached</span></div></div></div>
       <div class="legend">
-        <span><i style="background:var(--pos)"></i>positive weight</span>
-        <span><i style="background:var(--neg)"></i>negative weight</span>
+        <span><i style="background:var(--s1)"></i>positive weight</span>
+        <span><i style="background:var(--s2)"></i>negative weight</span>
         <span>thickness = |w| · brightness = |w · a| (signal that flows)</span>
         <span><i class="sw-act"></i>fill = activation</span>
       </div>
@@ -90,14 +94,37 @@
 </div>
 
 <script type="module">
-import { $, frame, InputPanel, NetView, SegDisplay, lossChart, setStatus, sourceLink, getJSON, segmentsOf } from "./assets/common.js";
+import { $, fmtMs, frame, InputPanel, NetView, SegDisplay, lossChart, setStatus, sourceLink, getJSON, segmentsOf } from "./assets/common.js";
 import { PyEngine } from "./assets/engines.js";
 
 frame();
 $("src-nn").innerHTML = sourceLink("part1_2_python/nn/neural_network.py", "nn");
 $("src-train").innerHTML = sourceLink("part1_2_python/train_7seg.py", "train_7seg.py") + " / " + sourceLink("part1_2_python/train_xor.py", "train_xor.py");
 
-const py = new PyEngine();
+const py = new PyEngine((text, secs) => {
+  const t = `${text} ${secs.toFixed(0)} s`;
+  setStatus("status", null, t);
+  setStatus("train-status", null, "waiting for Python · " + t);
+  $("veil-text").textContent = t;
+});
+// The graph is drawn from the JSON export right away (drawing only); values appear after Python's first forward()
+const preview = {};
+async function drawPreview() {
+  const ds = dataset;
+  preview[ds] ??= getJSON(`build/models/${ds}.json`);
+  const net = await preview[ds];
+  if (ds === dataset && !view.last) view.build(net);
+}
+function showError(where, err) {
+  setStatus(where, "error", err.message);
+  const s = $(where);
+  if (!s.querySelector(".retry")) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "tool retry"; b.textContent = "Reload";
+    b.addEventListener("click", () => location.reload());
+    s.appendChild(b);
+  }
+}
 const view = new NetView($("net"));
 const display = new SegDisplay($("seven"), $("readout"), $("segtable"));
 let dataset = "7seg", source = "exported", panel = null, recorded = null;
@@ -133,19 +160,22 @@ async function forward() {
     if (t !== ticket) return;
     if (view.net !== net) view.build(net);
     view.render(r);
+    $("veil").hidden = true;
     if (dataset === "7seg") display.render(r.output);
     else {
       $("xor-value").textContent = r.output[0].toFixed(4);
       $("xor-readout").innerHTML = `≥ 0.5 → <strong>${segmentsOf(r.output)[0]}</strong> · target ${bits[0] ^ bits[1]}`;
     }
-    setStatus("status", "ready", `computed by Python ${await py.init()} · ${source === "exported" ? `models/${dataset}.json` : "network trained in this browser"}` +
-      ` · forward ${r.compute_ms.toFixed(2)} ms`);
+    setStatus("status", "ready", `computed by ${await py.init()} · ${source === "exported" ? `models/${dataset}.json` : "network trained in this browser"}` +
+      ` · forward ${fmtMs(r.compute_ms)}`);
   } catch (err) {
-    setStatus("status", "error", "Python error: " + err.message);
+    $("veil").hidden = true;
+    showError("status", err);
   }
 }
 function start() {
   buildPanel();
+  drawPreview();
   forward();
 }
 
@@ -226,10 +256,7 @@ $("train").addEventListener("click", async () => {
 py.init().then((v) => {
   $("train").disabled = false;
   setStatus("train-status", "ready", `ready · ${v}`);
-}).catch((err) => {
-  setStatus("status", "error", "could not start Python: " + err.message);
-  setStatus("train-status", "error", "Python unavailable");
-});
+}).catch((err) => showError("train-status", err));
 getJSON("build/models/tf_comparison.json").then((d) => { recorded = d; drawChart(); }).catch(() => {});
 start();
 </script>

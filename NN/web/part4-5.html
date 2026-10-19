@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05164d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
 <title>Parts 4+5 · C</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -39,8 +39,8 @@
       <div class="status" id="status"><span class="dot"></span><span class="status-text">loading WebAssembly…</span></div>
       <div class="svg-scroll"><svg class="net" id="net" viewBox="0 0 640 470" role="img" aria-label="Network graph"></svg></div>
       <div class="legend">
-        <span><i style="background:var(--pos)"></i>positive weight</span>
-        <span><i style="background:var(--neg)"></i>negative weight</span>
+        <span><i style="background:var(--s1)"></i>positive weight</span>
+        <span><i style="background:var(--s2)"></i>negative weight</span>
         <span>z and activations from the C program · edges drawn from models/7seg.json (the same weights)</span>
       </div>
     </section>
@@ -78,7 +78,7 @@
 </div>
 
 <script type="module">
-import { $, frame, InputPanel, NetView, SegDisplay, setStatus, sourceLink, getJSON, getText, segmentsOf, toBits, PATTERNS } from "./assets/common.js";
+import { $, fmtMs, frame, InputPanel, NetView, SegDisplay, setStatus, sourceLink, getJSON, getText, segmentsOf, toBits, PATTERNS } from "./assets/common.js";
 import { CEngine, PyEngine } from "./assets/engines.js";
 
 frame();
@@ -100,7 +100,7 @@ async function forward(bits) {
     if (!view.net) view.build(await netJson);
     view.render(r); display.render(r.output);
     $("stdout").innerHTML = `<span class="cmd">$ ${r.command}</span>\n` + r.stdout.replace(/[<&]/g, (c) => (c === "<" ? "&lt;" : "&amp;"));
-    setStatus("status", "ready", `computed by C (${engine === "txt" ? "Part 4, nn_load_txt" : "Part 5, nn_init_from_header"}) as WebAssembly · main() ${r.compute_ms.toFixed(2)} ms`);
+    setStatus("status", "ready", `computed by C (${engine === "txt" ? "Part 4, nn_load_txt" : "Part 5, nn_init_from_header"}) as WebAssembly · main() ${fmtMs(r.compute_ms)}`);
   } catch (err) {
     setStatus("status", "error", "C program error: " + err.message);
   }

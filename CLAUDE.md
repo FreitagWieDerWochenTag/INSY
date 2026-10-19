@@ -8,6 +8,8 @@ with its decisions, commands and work-log rule – read it before working on tha
 | `NN/` | Neural network from scratch: 4-bit BCD → 7-segment decoder, Parts 1–6 (see `NN/CLAUDE.md`) |
 
 ## Conventions for all projects
+- Design: follow `DESIGN.md` (Apple-like, navy + white, yellow accent only for active states). Its visual reference is the
+  "INSY Design System" in Claude Design (link in DESIGN.md). Keep both in sync when the design changes.
 - Code, comments, console output and docs are in English.
 - Shared Python venv at the repo root: `.venv` (gitignored). Run commands from the repo root.
 - Inside a project: general folders (`docs/`, `models/`, `tools/`, `web/`) + one folder per assignment part.

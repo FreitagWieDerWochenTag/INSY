@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05164d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
 <title>Part 6 · ESP32</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -161,7 +161,7 @@ function drawBench() {
   const g = el("g", { transform: "translate(632,160) scale(1.25)" }, svg);
   [...SEGMENTS].forEach((s) => {
     el("polygon", { points: SEG_SHAPES[s], class: "seg-off" }, g);
-    parts.segs[s] = el("polygon", { points: SEG_SHAPES[s], fill: "#ff3b2f", "fill-opacity": 0, class: "lit", filter: "url(#seg-glow)" }, g);
+    parts.segs[s] = el("polygon", { points: SEG_SHAPES[s], fill: "#ffad00", "fill-opacity": 0, class: "lit", filter: "url(#seg-glow)" }, g);
   });
   el("circle", { cx: 152, cy: 192, r: 6, class: "seg-off" }, g);   // decimal point (not wired)
   el("text", { x: 695, y: 134, "text-anchor": "middle", class: "silk-sm" }, svg).textContent = "5161AS · common cathode";

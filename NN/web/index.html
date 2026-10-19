@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05164d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
 <title>BCD Decoder Net</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -51,6 +51,12 @@
       <p>The Arduino sketch reads a digit over serial, runs the C network and drives a 7-segment display through 7 GPIOs.
         Shown on a simulated board with wires.</p>
       <span class="runs">runs: the unchanged part6_esp32/src/main.cpp as WebAssembly</span>
+    </a>
+    <a class="panel card" href="log.html">
+      <span class="num">Log</span>
+      <h3>Prompt log, tokens &amp; cost</h3>
+      <p>How this project was built with Claude Code: every prompt, what was done, and the measured API tokens and cost per prompt and per category.</p>
+      <span class="runs">source: docs/PROMPT_LOG.md · tools/token_usage.py</span>
     </a>
   </div>
 

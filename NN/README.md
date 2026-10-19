@@ -3,7 +3,7 @@
 A feedforward neural network written from scratch in Python (`Neuron` → `Layer` → `NeuralNetwork`) that turns a
 4-bit BCD digit (0–9) into the seven segments A–G of a display. Assignment: [docs/Aufgabenstellung.pdf](docs/Aufgabenstellung.pdf).
 
-**Interactive page: <https://freitagwiederwochentag.github.io/INSY/NN/>**. Each part runs its real code in the browser:
+**Interactive page: <https://freitagwiederwochentag.github.io/INSY/NN/>**. **Prompt log with tokens & cost: <https://freitagwiederwochentag.github.io/INSY/NN/log.html>**. Each part runs its real code in the browser:
 Python via Pyodide, C and the ESP32 sketch via WebAssembly, and the Keras weights via TensorFlow.js (Part 3, visualization only).
 
 | Part | Folder | What | Result |

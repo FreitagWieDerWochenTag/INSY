@@ -9,6 +9,8 @@ export const THRESHOLD = 0.5;
 const SVGNS = "http://www.w3.org/2000/svg";
 export const $ = (id) => document.getElementById(id);
 export const fmt = (v) => (v >= 0 ? " " : "") + v.toFixed(4);
+// Safari rounds timers to whole milliseconds, so very fast calls can read as 0
+export const fmtMs = (ms) => (ms < 0.01 ? "< 0.01 ms" : ms.toFixed(2) + " ms");
 export const toBits = (d, n = 4) => Array.from({ length: n }, (_, i) => (d >> (n - 1 - i)) & 1);
 export const toValue = (bits) => bits.reduce((acc, b) => acc * 2 + b, 0);
 export const segmentsOf = (output) => output.map((v) => (v >= THRESHOLD ? 1 : 0));
@@ -43,6 +45,7 @@ const PAGES = [
   ["part3.html", "Part 3", "TensorFlow"],
   ["part4-5.html", "Parts 4+5", "C"],
   ["part6.html", "Part 6", "ESP32"],
+  ["log.html", "Log", "tokens & cost"],
 ];
 export function frame() {
   const here = location.pathname.split("/").pop() || "index.html";
@@ -51,7 +54,7 @@ export function frame() {
   bar.setAttribute("aria-label", "Parts");
   bar.innerHTML = `<div class="topbar-inner">
       <a class="brand" href="index.html"><svg viewBox="0 0 120 200" aria-hidden="true">${
-        Object.entries(SEG_SHAPES).map(([s, p]) => `<polygon points="${p}" fill="${"BCFG".includes(s) ? "var(--led)" : "var(--line)"}"/>`).join("")
+        Object.entries(SEG_SHAPES).map(([s, p]) => `<polygon points="${p}" fill="${"BCFG".includes(s) ? "var(--accent)" : "var(--line)"}"/>`).join("")
       }</svg>BCD Decoder Net</a>
       <div class="tabs">${PAGES.map(([href, label, tech]) =>
         `<a class="tab" href="${href}"${href === here ? ' aria-current="page"' : ""}>${label}${tech ? `<small>${tech}</small>` : ""}</a>`).join("")}</div>

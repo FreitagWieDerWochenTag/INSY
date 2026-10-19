@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05164d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
 <title>Part 3 · TensorFlow</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -41,8 +41,8 @@
       <div class="status" id="status"><span class="dot"></span><span class="status-text">loading TensorFlow.js…</span></div>
       <div class="svg-scroll"><svg class="net" id="net" viewBox="0 0 640 470" role="img" aria-label="Network graph"></svg></div>
       <div class="legend">
-        <span><i style="background:var(--pos)"></i>positive weight</span>
-        <span><i style="background:var(--neg)"></i>negative weight</span>
+        <span><i style="background:var(--s1)"></i>positive weight</span>
+        <span><i style="background:var(--s2)"></i>negative weight</span>
         <span>thickness = |w| · brightness = |w · a|</span>
         <span><i class="sw-act"></i>fill = activation</span>
       </div>
@@ -87,7 +87,7 @@
 </div>
 
 <script type="module">
-import { $, frame, InputPanel, NetView, SegDisplay, lossChart, setStatus, sourceLink, getJSON, segmentsOf, SEGMENTS, PATTERNS } from "./assets/common.js";
+import { $, fmtMs, frame, InputPanel, NetView, SegDisplay, lossChart, setStatus, sourceLink, getJSON, segmentsOf, SEGMENTS, PATTERNS } from "./assets/common.js";
 import { TFEngine, PyEngine } from "./assets/engines.js";
 
 frame();
@@ -109,7 +109,7 @@ async function forward(bits) {
     if (t !== ticket) return;
     if (!view.net) view.build(tfe.network());
     view.render(r); display.render(r.output);
-    setStatus("status", "ready", `computed by TensorFlow.js ${window.tf.version.tfjs} (${tfe.backend} backend) · models/7seg_tf_weights.json · ${r.compute_ms.toFixed(2)} ms`);
+    setStatus("status", "ready", `computed by TensorFlow.js ${window.tf.version.tfjs} (${tfe.backend} backend) · models/7seg_tf_weights.json · ${fmtMs(r.compute_ms)}`);
     compare(bits, r);
   } catch (err) {
     setStatus("status", "error", "TensorFlow.js error: " + err.message);

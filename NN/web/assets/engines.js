@@ -17,27 +17,60 @@ function loadScript(src) {
 
 // ---------- Python in Pyodide (web worker) ----------
 let pyWorker = null;
+const STALL_SECONDS = 90;   // no progress for this long -> report an error instead of waiting forever
 export class PyEngine {
-  constructor() {
+  // onProgress(text, seconds) is called while Python starts (download, NumPy, nn package)
+  constructor(onProgress) {
     if (!pyWorker) {
-      pyWorker = { worker: new Worker("assets/py-worker.js"), next: 0, pending: new Map() };
-      pyWorker.worker.onmessage = ({ data }) => {
-        const p = pyWorker.pending.get(data.id);
-        if (!p) return;
-        if (data.stdout !== undefined) return p.onStdout?.(data.stdout);
-        pyWorker.pending.delete(data.id);
-        data.error !== undefined ? p.reject(new Error(data.error)) : p.resolve(data.result);
+      pyWorker = { next: 0, pending: new Map(), listeners: new Set(), failed: null, last: "starting…", t0: performance.now() };
+      const fail = (msg) => {
+        pyWorker.failed ??= msg;
+        pyWorker.pending.forEach((p) => p.reject(new Error(pyWorker.failed)));
+        pyWorker.pending.clear();
+        clearInterval(pyWorker.timer);
       };
+      try {
+        pyWorker.worker = new Worker("assets/py-worker.js", { type: "module" });
+      } catch (err) {
+        fail("this browser cannot start module workers: " + err.message);
+      }
+      if (pyWorker.worker) {
+        pyWorker.worker.onerror = (e) => { e.preventDefault?.(); fail(e.message || "the Python worker crashed"); };
+        pyWorker.worker.onmessageerror = () => fail("the Python worker sent an unreadable message");
+        pyWorker.worker.onmessage = ({ data }) => {
+          if (data.progress !== undefined) {
+            pyWorker.last = data.progress; pyWorker.lastAt = performance.now();
+            return pyWorker.listeners.forEach((f) => f(data.progress, (performance.now() - pyWorker.t0) / 1000));
+          }
+          if (data.fatal !== undefined) return fail("Python could not start: " + data.fatal);
+          const p = pyWorker.pending.get(data.id);
+          if (!p) return;
+          if (data.stdout !== undefined) return p.onStdout?.(data.stdout);
+          pyWorker.pending.delete(data.id);
+          data.error !== undefined ? p.reject(new Error(data.error)) : p.resolve(data.result);
+        };
+      }
+      pyWorker.lastAt = performance.now();
+      pyWorker.timer = setInterval(() => {   // elapsed-time updates + stall detection while starting
+        if (pyWorker.ready) return clearInterval(pyWorker.timer);
+        const secs = (performance.now() - pyWorker.t0) / 1000;
+        pyWorker.listeners.forEach((f) => f(pyWorker.last, secs));
+        if ((performance.now() - pyWorker.lastAt) / 1000 > STALL_SECONDS) fail(`Python did not finish loading (stuck at: ${pyWorker.last})`);
+      }, 1000);
     }
+    if (onProgress) pyWorker.listeners.add(onProgress);
   }
   call(fn, args = [], onStdout) {
     return new Promise((resolve, reject) => {
+      if (pyWorker.failed) return reject(new Error(pyWorker.failed));
       const id = pyWorker.next++;
       pyWorker.pending.set(id, { resolve, reject, onStdout });
       pyWorker.worker.postMessage({ id, fn, args });
     });
   }
-  init() { return (this.version ??= this.call("init")); }
+  init() {
+    return (this.version ??= this.call("init").then((v) => { pyWorker.ready = true; return v; }));
+  }
   load(name, url) { return this.call("load", [name, url]); }     // -> network dict (JSON export format)
   async forward(name, bits) {
     const r = await this.call("forward", [name, JSON.stringify(bits)]);
