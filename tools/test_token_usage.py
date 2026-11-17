@@ -77,6 +77,9 @@ def test_json_matches_tables():
     ({"command": "git commit -m x"}, "NN", "General"),
     ({"command": "ls"}, "General", "General"),   # no path: the prompt's default
     ({"file_path": "NN/web/assets/style.css", "content": "see DESIGN.md"}, "General", "NN"),   # content doesn't count
+    ({"file_path": "/Users/x/INSY/Radon/web/index.html"}, "NN", "Radon"),
+    ({"command": "cd Radon && ../.venv/bin/pytest -q"}, "General", "Radon"),
+    ({"command": "cp NN/web/log.html Radon/web/"}, "General", "General"),   # two projects: the prompt's default
 ])
 def test_project_of_call(tool_input, default, expected):
     assert project_of_call(make_call(tools=[("Edit", tool_input)]), default) == expected

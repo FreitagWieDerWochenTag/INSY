@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-19 22:11",
+ "updated": "2026-11-17 15:49",
  "model": "Claude Opus 5.5",
  "prices_per_mtok": {
   "input": 4.0,
@@ -9,12 +9,12 @@
   "cache_write_1h": 8.0
  },
  "total": {
-  "input": 140,
-  "cache_write": 161929,
-  "cache_read": 24012153,
-  "output": 72545,
-  "calls": 70,
-  "cost": 7.5493226000000035,
+  "input": 150,
+  "cache_write": 169708,
+  "cache_read": 25645349,
+  "output": 75302,
+  "calls": 75,
+  "cost": 7.993373800000003,
   "unpriced": 0
  },
  "by_category": [
@@ -30,12 +30,12 @@
   },
   {
    "category": "Implementation",
-   "input": 68,
-   "cache_write": 62260,
-   "cache_read": 11389252,
-   "output": 31823,
-   "calls": 34,
-   "cost": 3.412662399999999,
+   "input": 70,
+   "cache_write": 63312,
+   "cache_read": 11836492,
+   "output": 32298,
+   "calls": 35,
+   "cost": 3.520034399999999,
    "unpriced": 0
   },
   {
@@ -50,12 +50,12 @@
   },
   {
    "category": "Documentation",
-   "input": 18,
-   "cache_write": 29275,
-   "cache_read": 3484022,
-   "output": 15060,
-   "calls": 9,
-   "cost": 1.2322764000000002,
+   "input": 24,
+   "cache_write": 35150,
+   "cache_read": 4221686,
+   "output": 16728,
+   "calls": 12,
+   "cost": 1.4601932000000002,
    "unpriced": 0
   },
   {
@@ -70,18 +70,18 @@
   },
   {
    "category": "Answers",
-   "input": 2,
-   "cache_write": 833,
-   "cache_read": 402533,
-   "output": 906,
-   "calls": 1,
-   "cost": 0.1052986,
+   "input": 4,
+   "cache_write": 1685,
+   "cache_read": 850825,
+   "output": 1520,
+   "calls": 2,
+   "cost": 0.214061,
    "unpriced": 0
   }
  ],
  "by_prompt": [
   {
-   "n": 12,
+   "n": 3,
    "prompt": "There are a few things I want to have changed. \u2026",
    "input": 16,
    "cache_write": 12283,
@@ -92,7 +92,7 @@
    "unpriced": 0
   },
   {
-   "n": 13,
+   "n": 4,
    "prompt": "There are three things that need to be changed \u2026",
    "input": 90,
    "cache_write": 112438,
@@ -103,14 +103,25 @@
    "unpriced": 0
   },
   {
-   "n": 14,
+   "n": 5,
    "prompt": "now it looks quite good but there is one last t\u2026",
-   "input": 34,
-   "cache_write": 37208,
-   "cache_read": 7261837,
-   "output": 23194,
-   "calls": 17,
-   "cost": 2.2140474,
+   "input": 40,
+   "cache_write": 42545,
+   "cache_read": 8601176,
+   "output": 25005,
+   "calls": 20,
+   "cost": 2.5608551999999998,
+   "unpriced": 0
+  },
+  {
+   "n": 6,
+   "prompt": "Read through claude.md and design md as well as\u2026",
+   "input": 4,
+   "cache_write": 2442,
+   "cache_read": 293857,
+   "output": 946,
+   "calls": 2,
+   "cost": 0.0972434,
    "unpriced": 0
   }
  ],

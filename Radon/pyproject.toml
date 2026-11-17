@@ -1,0 +1,15 @@
+# Makes the `radon` analysis package importable: .venv/bin/pip install -e Radon
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "insy-radon"
+version = "1.0.0"
+description = "Radon sensor data analysis and dashboard (INSY school project)"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "pandas>=2.2", "scipy>=1.13"]
+
+[tool.setuptools]
+package-dir = {"radon" = "analysis/radon"}
+packages = ["radon"]

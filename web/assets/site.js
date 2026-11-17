@@ -21,7 +21,7 @@ export const sourceLink = (path, label) =>
   `<a href="${repoUrl(path)}" target="_blank" rel="noopener"><code>${label || path}</code></a>`;
 
 const PAGES = [["index.html", "Home"], ["design.html", "Design"], ["log.html", "Prompt log"]];
-const PROJECTS = [["NN/", "NN", "neural network"]];
+const PROJECTS = [["NN/", "NN", "neural network"], ["Radon/", "Radon", "data dashboard"]];
 export function frame() {
   const here = location.pathname.split("/").pop() || "index.html";
   const bar = document.createElement("nav");

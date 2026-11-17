@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-19 22:11",
+ "updated": "2026-11-17 15:49",
  "model": "Claude Opus 5.5",
  "prices_per_mtok": {
   "input": 4.0,
@@ -9,178 +9,79 @@
   "cache_write_1h": 8.0
  },
  "total": {
-  "input": 484,
-  "cache_write": 615690,
-  "cache_read": 37046037,
-  "output": 307934,
-  "calls": 241,
-  "cost": 18.495343399999992,
+  "input": 314,
+  "cache_write": 408011,
+  "cache_read": 26374087,
+  "output": 218440,
+  "calls": 156,
+  "cost": 12.908961399999997,
   "unpriced": 0
  },
  "by_category": [
   {
    "category": "Planning",
-   "input": 58,
-   "cache_write": 117457,
-   "cache_read": 2857099,
-   "output": 28508,
-   "calls": 29,
-   "cost": 2.0814678,
+   "input": 8,
+   "cache_write": 15567,
+   "cache_read": 328478,
+   "output": 8632,
+   "calls": 4,
+   "cost": 0.3629036,
    "unpriced": 0
   },
   {
    "category": "Implementation",
-   "input": 176,
-   "cache_write": 225576,
-   "cache_read": 15311208,
-   "output": 166400,
-   "calls": 87,
-   "cost": 8.195553600000002,
+   "input": 152,
+   "cache_write": 208358,
+   "cache_read": 13752764,
+   "output": 136658,
+   "calls": 75,
+   "cost": 7.151184800000001,
    "unpriced": 0
   },
   {
    "category": "Training & testing",
-   "input": 120,
-   "cache_write": 158896,
-   "cache_read": 8109878,
-   "output": 67911,
-   "calls": 60,
-   "cost": 4.251843600000001,
+   "input": 84,
+   "cache_write": 117086,
+   "cache_read": 6043320,
+   "output": 52293,
+   "calls": 42,
+   "cost": 3.191548,
    "unpriced": 0
   },
   {
    "category": "Documentation",
-   "input": 86,
-   "cache_write": 78743,
-   "cache_read": 7228437,
-   "output": 29785,
-   "calls": 43,
-   "cost": 2.6716754000000003,
+   "input": 50,
+   "cache_write": 57469,
+   "cache_read": 4550527,
+   "output": 13904,
+   "calls": 25,
+   "cost": 1.6481374,
    "unpriced": 0
   },
   {
    "category": "Research & context",
-   "input": 18,
-   "cache_write": 21341,
-   "cache_read": 1287236,
-   "output": 5120,
-   "calls": 9,
-   "cost": 0.5306472,
+   "input": 6,
+   "cache_write": 5275,
+   "cache_read": 291479,
+   "output": 3255,
+   "calls": 3,
+   "cost": 0.1656198,
    "unpriced": 0
   },
   {
    "category": "Answers",
-   "input": 26,
-   "cache_write": 13677,
-   "cache_read": 2252179,
-   "output": 10210,
-   "calls": 13,
-   "cost": 0.7641558,
+   "input": 14,
+   "cache_write": 4256,
+   "cache_read": 1407519,
+   "output": 3698,
+   "calls": 7,
+   "cost": 0.3895678,
    "unpriced": 0
   }
  ],
  "by_prompt": [
   {
    "n": 1,
-   "prompt": "Das Ziel dieses Projektes ist es ein Neuronales\u2026",
-   "input": 10,
-   "cache_write": 33761,
-   "cache_read": 207007,
-   "output": 4205,
-   "calls": 5,
-   "cost": 0.3956293999999999,
-   "unpriced": 0
-  },
-  {
-   "n": 2,
-   "prompt": "(feedback) dont forget to document / log what y\u2026",
-   "input": 4,
-   "cache_write": 1334,
-   "cache_read": 109336,
-   "output": 1206,
-   "calls": 2,
-   "cost": 0.0566752,
-   "unpriced": 0
-  },
-  {
-   "n": 3,
-   "prompt": "(feedback) do you actually know how many token \u2026",
-   "input": 40,
-   "cache_write": 30732,
-   "cache_read": 1413629,
-   "output": 22494,
-   "calls": 20,
-   "cost": 0.9786217999999998,
-   "unpriced": 0
-  },
-  {
-   "n": 4,
-   "prompt": "hier ein ausschnitt aus cost",
-   "input": 6,
-   "cache_write": 2737,
-   "cache_read": 264657,
-   "output": 1759,
-   "calls": 3,
-   "cost": 0.1100314,
-   "unpriced": 0
-  },
-  {
-   "n": 5,
-   "prompt": "kann man jetzt diese 4 bits visualisieren, und \u2026",
-   "input": 6,
-   "cache_write": 5400,
-   "cache_read": 279642,
-   "output": 3350,
-   "calls": 3,
-   "cost": 0.1661524,
-   "unpriced": 0
-  },
-  {
-   "n": 6,
-   "prompt": "(feedback) just to be sure. I want the html web\u2026",
-   "input": 26,
-   "cache_write": 33358,
-   "cache_read": 1480983,
-   "output": 21119,
-   "calls": 13,
-   "cost": 0.9855446,
-   "unpriced": 0
-  },
-  {
-   "n": 7,
-   "prompt": "start the server and open the html for me",
-   "input": 12,
-   "cache_write": 5994,
-   "cache_read": 811562,
-   "output": 1985,
-   "calls": 6,
-   "cost": 0.25001239999999997,
-   "unpriced": 0
-  },
-  {
-   "n": 8,
-   "prompt": "can you restructure the folder better so it's m\u2026",
-   "input": 36,
-   "cache_write": 26075,
-   "cache_read": 2729654,
-   "output": 15432,
-   "calls": 18,
-   "cost": 1.0633148000000001,
-   "unpriced": 0
-  },
-  {
-   "n": 9,
-   "prompt": "Add a table of api tokens and cost in the deck \u2026",
-   "input": 34,
-   "cache_write": 81325,
-   "cache_read": 3601571,
-   "output": 18336,
-   "calls": 17,
-   "cost": 1.7377701999999997,
-   "unpriced": 0
-  },
-  {
-   "n": 10,
    "prompt": "read the claude.md file to make sure you dont f\u2026",
    "input": 70,
    "cache_write": 140422,
@@ -191,7 +92,7 @@
    "unpriced": 0
   },
   {
-   "n": 11,
+   "n": 2,
    "prompt": "for whatever reason you stopped in the middle o\u2026",
    "input": 54,
    "cache_write": 49775,
@@ -202,7 +103,7 @@
    "unpriced": 0
   },
   {
-   "n": 12,
+   "n": 3,
    "prompt": "There are a few things I want to have changed. \u2026",
    "input": 148,
    "cache_write": 176186,
@@ -213,7 +114,7 @@
    "unpriced": 0
   },
   {
-   "n": 13,
+   "n": 4,
    "prompt": "There are three things that need to be changed \u2026",
    "input": 32,
    "cache_write": 26264,
@@ -224,7 +125,7 @@
    "unpriced": 0
   },
   {
-   "n": 14,
+   "n": 5,
    "prompt": "now it looks quite good but there is one last t\u2026",
    "input": 6,
    "cache_write": 2327,
@@ -232,6 +133,17 @@
    "output": 5784,
    "calls": 3,
    "cost": 0.3864346000000001,
+   "unpriced": 0
+  },
+  {
+   "n": 6,
+   "prompt": "Read through claude.md and design md as well as\u2026",
+   "input": 4,
+   "cache_write": 13037,
+   "cache_read": 226091,
+   "output": 392,
+   "calls": 2,
+   "cost": 0.1573702,
    "unpriced": 0
   }
  ],

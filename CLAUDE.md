@@ -6,6 +6,7 @@ with its decisions, commands and work-log rule – read it before working on tha
 | Folder | Project |
 |---|---|
 | `NN/` | Neural network from scratch: 4-bit BCD → 7-segment decoder, Parts 1–6 (see `NN/CLAUDE.md`) |
+| `Radon/` | Radon sensor data: Python analysis (pandas, SciPy) → data-backed findings → dashboard (see `Radon/CLAUDE.md`) |
 
 ## Conventions for all projects
 - Design: follow `DESIGN.md` (Apple-like, navy + white, yellow accent only for active states). Its visual reference is the
@@ -26,4 +27,4 @@ design, start page, tools) goes to the general log `docs/PROMPT_LOG.md`. After *
 files changed and decisions. The token numbers are measured, never estimated: run
 `.venv/bin/python tools/token_usage.py --write-log`, which regenerates the cost block at the top of every log (+ `token_usage.json`
 for the Log pages). It splits a prompt's API calls by the paths they touched; calls without a path follow `PROMPT_PROJECT`
-(default NN). Never edit the block between `<!-- COSTS:START/END -->` by hand. Prices live in `PRICES` in `tools/token_usage.py`.
+(default NN; a call touching only one project's paths goes to that project). Never edit the block between `<!-- COSTS:START/END -->` by hand. Prices live in `PRICES` in `tools/token_usage.py`.

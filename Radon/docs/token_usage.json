@@ -1,0 +1,96 @@
+{
+ "updated": "2026-11-17 15:49",
+ "model": "Claude Opus 5.5",
+ "prices_per_mtok": {
+  "input": 4.0,
+  "output": 20.0,
+  "cache_read": 0.2,
+  "cache_write_5m": 5.0,
+  "cache_write_1h": 8.0
+ },
+ "total": {
+  "input": 100,
+  "cache_write": 137427,
+  "cache_read": 5355230,
+  "output": 64407,
+  "calls": 47,
+  "cost": 3.459002,
+  "unpriced": 1
+ },
+ "by_category": [
+  {
+   "category": "Planning",
+   "input": 16,
+   "cache_write": 36802,
+   "cache_read": 341635,
+   "output": 4559,
+   "calls": 8,
+   "cost": 0.45398700000000003,
+   "unpriced": 1
+  },
+  {
+   "category": "Implementation",
+   "input": 52,
+   "cache_write": 61751,
+   "cache_read": 2808615,
+   "output": 34139,
+   "calls": 23,
+   "cost": 1.7387190000000001,
+   "unpriced": 0
+  },
+  {
+   "category": "Training & testing",
+   "input": 22,
+   "cache_write": 19520,
+   "cache_read": 1415251,
+   "output": 23546,
+   "calls": 11,
+   "cost": 0.9102182000000001,
+   "unpriced": 0
+  },
+  {
+   "category": "Documentation",
+   "input": 4,
+   "cache_write": 11830,
+   "cache_read": 284743,
+   "output": 1496,
+   "calls": 2,
+   "cost": 0.1815246,
+   "unpriced": 0
+  },
+  {
+   "category": "Research & context",
+   "input": 6,
+   "cache_write": 7524,
+   "cache_read": 504986,
+   "output": 667,
+   "calls": 3,
+   "cost": 0.17455320000000002,
+   "unpriced": 0
+  },
+  {
+   "category": "Answers",
+   "input": 0,
+   "cache_write": 0,
+   "cache_read": 0,
+   "output": 0,
+   "calls": 0,
+   "cost": 0.0,
+   "unpriced": 0
+  }
+ ],
+ "by_prompt": [
+  {
+   "n": 6,
+   "prompt": "Read through claude.md and design md as well as\u2026",
+   "input": 100,
+   "cache_write": 137427,
+   "cache_read": 5355230,
+   "output": 64407,
+   "calls": 47,
+   "cost": 3.459002,
+   "unpriced": 1
+  }
+ ],
+ "log": "Radon"
+}

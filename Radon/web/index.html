@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05164d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<title>Radon Dashboard</title>
+<meta name="description" content="Seven months of radon readings in seven rooms, cleaned and analysed in Python: what drives radon in this house.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>Radon <span>· what drives it in this house</span></h1>
+    <p class="lede" id="lede">Radon readings from seven rooms, indoor climate and local weather, cleaned and analysed in Python.
+      Every number and every statement on this page is computed from the data.</p>
+    <p class="status" id="status"><span class="dot"></span><span class="status-text">loading the analysis…</span></p>
+  </header>
+
+  <section class="panel"><div class="kpis" id="kpis"></div></section>
+
+  <div class="picker"><div class="seg" id="rooms" role="group" aria-label="Room"></div></div>
+
+  <section class="panel">
+    <div class="head-row"><h2 id="ts-title">Daily radon</h2><span class="note" style="margin:0" id="ts-note"></span></div>
+    <div class="chart-scroll"><svg class="chart" id="ts" viewBox="0 0 900 300" role="img" aria-label="Daily radon of the selected room"></svg></div>
+    <div class="legend">
+      <span><i class="k1"></i>daily mean</span><span><i class="kband"></i>daily min – max</span>
+      <span><i class="kref"></i>reference level</span><span><i class="kempty"></i>nobody at home</span>
+    </div>
+  </section>
+
+  <div class="lower">
+    <section class="panel">
+      <h2 id="hp-title">Over the day</h2>
+      <svg class="chart" id="hp" viewBox="0 0 560 240" role="img" aria-label="Mean radon per hour of the day"></svg>
+      <p class="note">Mean per hour of the day, days with somebody at home. Hover for the values.</p>
+    </section>
+    <section class="panel">
+      <h2>Rooms compared</h2>
+      <svg class="chart" id="cmp" viewBox="0 0 560 240" role="img" aria-label="Mean radon per room"></svg>
+      <p class="note">Mean over the whole period; the selected room is highlighted. Click a bar to select a room.</p>
+    </section>
+  </div>
+
+  <h2 class="section-title">Findings</h2>
+  <p class="section-lede">Each finding is tested on one value per day (or per airing), so thousands of correlated hours can't fake
+    significance. A finding holds when p &lt; 0.01 and the effect is big enough to matter (|ρ| ≥ 0.2 or ≥ 10 %).</p>
+  <div class="findings" id="findings"></div>
+
+  <h2 class="section-title">Not supported by the data</h2>
+  <p class="section-lede">Things that are often assumed, checked and not found here.</p>
+  <div class="findings" id="weak"></div>
+
+  <section class="panel">
+    <h2>What moves with radon</h2>
+    <p class="sub">Spearman ρ between daily drivers and the daily mean radon of each room (days with somebody at home).
+      Faded cells are not significant (p ≥ 0.01) or weak (|ρ| &lt; 0.2).</p>
+    <div class="chart-scroll"><svg class="chart" id="heat" viewBox="0 0 900 300" role="img" aria-label="Correlation of radon with drivers"></svg></div>
+    <div class="legend"><span><i class="kpos"></i>more radon when the driver is higher</span><span><i class="kneg"></i>less radon when the driver is higher</span></div>
+  </section>
+
+  <section class="panel">
+    <h2>All rooms in numbers</h2>
+    <div class="tbl-scroll"><table class="data" id="table"></table></div>
+    <p class="note" id="table-note"></p>
+  </section>
+
+  <section class="panel">
+    <h2>How it was done</h2>
+    <ul class="note" id="method" style="margin:0; padding-left:1.2em; display:grid; gap:6px"></ul>
+  </section>
+</div>
+<script type="module" src="assets/dashboard.js"></script>
+</body>
+</html>

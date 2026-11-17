@@ -1,6 +1,7 @@
 # Builds the web page of every project, runs the tests and publishes everything to GitHub Pages:
 #   https://<owner>.github.io/INSY/       web/ (start page: general design, rules and prompt log, list of projects)
 #   https://<owner>.github.io/INSY/NN/    NN/web (neural network, Parts 1-6)
+#   https://<owner>.github.io/INSY/Radon/ Radon/web (radon data analysis dashboard)
 name: Build, test and deploy pages
 
 on:
@@ -27,20 +28,25 @@ jobs:
           python-version: "3.14"
       - uses: mymindstorm/setup-emsdk@v14
       - name: Install Python packages
-        run: pip install -r NN/requirements.txt -e NN
+        run: pip install -r NN/requirements.txt -e NN -r Radon/requirements.txt -e Radon
       - name: Build the NN web page (copies models + Python code, compiles C and the ESP32 sketch to WebAssembly)
         run: NN/web/build.sh
+      - name: Build the Radon dashboard (runs the Python analysis on the CSV -> JSON)
+        run: Radon/web/build.sh
       - name: Build the general site (copies DESIGN.md and the general prompt log)
         run: web/build.sh
       - name: Tests (Python, C, ESP32 host build, WebAssembly in Node)
         run: cd NN && pytest -q
+      - name: Tests of the Radon analysis
+        run: cd Radon && pytest -q
       - name: Tests of the repo tools (token usage)
         run: pytest -q tools
       - name: Assemble the site
         run: |
-          mkdir -p _site/NN
+          mkdir -p _site/NN _site/Radon
           cp -r web/*.html web/assets web/build _site/
           cp -r NN/web/*.html NN/web/assets NN/web/build _site/NN/
+          cp -r Radon/web/*.html Radon/web/assets Radon/web/build _site/Radon/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

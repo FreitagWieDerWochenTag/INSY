@@ -14,36 +14,28 @@ Cross-check the session totals with `/cost`.
 
 | Category | API calls | Input | Cache write | Cache read | Output | Cost | Share |
 |---|---|---:|---:|---:|---:|---:|---:|
-| Planning | 29 | 58 | 117,457 | 2,857,099 | 28,508 | $2.08 | 11 % |
-| Implementation | 87 | 176 | 225,576 | 15,311,208 | 166,400 | $8.20 | 44 % |
-| Training & testing | 60 | 120 | 158,896 | 8,109,878 | 67,911 | $4.25 | 23 % |
-| Documentation | 43 | 86 | 78,743 | 7,228,437 | 29,785 | $2.67 | 14 % |
-| Research & context | 9 | 18 | 21,341 | 1,287,236 | 5,120 | $0.53 | 3 % |
-| Answers | 13 | 26 | 13,677 | 2,252,179 | 10,210 | $0.76 | 4 % |
-| **Total** | **241** | 484 | 615,690 | 37,046,037 | 307,934 | **$18.50** | 100 % |
+| Planning | 4 | 8 | 15,567 | 328,478 | 8,632 | $0.36 | 3 % |
+| Implementation | 75 | 152 | 208,358 | 13,752,764 | 136,658 | $7.15 | 55 % |
+| Training & testing | 42 | 84 | 117,086 | 6,043,320 | 52,293 | $3.19 | 25 % |
+| Documentation | 25 | 50 | 57,469 | 4,550,527 | 13,904 | $1.65 | 13 % |
+| Research & context | 3 | 6 | 5,275 | 291,479 | 3,255 | $0.17 | 1 % |
+| Answers | 7 | 14 | 4,256 | 1,407,519 | 3,698 | $0.39 | 3 % |
+| **Total** | **156** | 314 | 408,011 | 26,374,087 | 218,440 | **$12.91** | 100 % |
 
 **By prompt**
 
 | # | Prompt | API calls | Output | Cache read | Cost |
 |---:|---|---:|---:|---:|---:|
-| 1 | Das Ziel dieses Projektes ist es ein Neuronales… | 5 | 4,205 | 207,007 | $0.40 |
-| 2 | (feedback) dont forget to document / log what y… | 2 | 1,206 | 109,336 | $0.06 |
-| 3 | (feedback) do you actually know how many token … | 20 | 22,494 | 1,413,629 | $0.98 |
-| 4 | hier ein ausschnitt aus cost | 3 | 1,759 | 264,657 | $0.11 |
-| 5 | kann man jetzt diese 4 bits visualisieren, und … | 3 | 3,350 | 279,642 | $0.17 |
-| 6 | (feedback) just to be sure. I want the html web… | 13 | 21,119 | 1,480,983 | $0.99 |
-| 7 | start the server and open the html for me | 6 | 1,985 | 811,562 | $0.25 |
-| 8 | can you restructure the folder better so it's m… | 18 | 15,432 | 2,729,654 | $1.06 |
-| 9 | Add a table of api tokens and cost in the deck … | 17 | 18,336 | 3,601,571 | $1.74 |
-| 10 | read the claude.md file to make sure you dont f… | 35 | 62,652 | 4,053,605 | $3.19 |
-| 11 | for whatever reason you stopped in the middle o… | 26 | 10,650 | 1,567,416 | $0.92 |
-| 12 | There are a few things I want to have changed. … | 74 | 113,550 | 13,914,219 | $6.46 |
-| 13 | There are three things that need to be changed … | 16 | 25,412 | 5,352,183 | $1.79 |
-| 14 | now it looks quite good but there is one last t… | 3 | 5,784 | 1,260,573 | $0.39 |
+| 1 | read the claude.md file to make sure you dont f… | 35 | 62,652 | 4,053,605 | $3.19 |
+| 2 | for whatever reason you stopped in the middle o… | 26 | 10,650 | 1,567,416 | $0.92 |
+| 3 | There are a few things I want to have changed. … | 74 | 113,550 | 13,914,219 | $6.46 |
+| 4 | There are three things that need to be changed … | 16 | 25,412 | 5,352,183 | $1.79 |
+| 5 | now it looks quite good but there is one last t… | 3 | 5,784 | 1,260,573 | $0.39 |
+| 6 | Read through claude.md and design md as well as… | 2 | 392 | 226,091 | $0.16 |
 
 Category rules: **Planning** = plan mode or questions/plan approval · **Training & testing** = training, verify scripts, pytest, API checks · **Documentation** = Markdown files and this log · **Implementation** = other file edits and shell commands · **Research & context** = reading files, PDF, skills · **Answers** = replies without a tool call.
 
-Prices (USD per 1M tokens, Claude Opus 5.5): input $4 · output $20 · cache read $0.20 · cache write $5 (5 min) / $8 (1 h). `/cost` also counts small side calls (e.g. session titles, ~$0.002) that are not in the session log. The prompt that is running while the table is generated is only partly included. Last updated 2026-10-19 22:11.
+Prices (USD per 1M tokens, Claude Opus 5.5): input $4 · output $20 · cache read $0.20 · cache write $5 (5 min) / $8 (1 h). `/cost` also counts small side calls (e.g. session titles, ~$0.002) that are not in the session log. The prompt that is running while the table is generated is only partly included. Last updated 2026-11-17 15:49.
 <!-- COSTS:END -->
 
 ---

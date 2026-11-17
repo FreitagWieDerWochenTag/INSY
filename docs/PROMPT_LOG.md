@@ -12,25 +12,26 @@ Token numbers are **measured** with `tools/token_usage.py`, which reads the Clau
 
 | Category | API calls | Input | Cache write | Cache read | Output | Cost | Share |
 |---|---|---:|---:|---:|---:|---:|---:|
-| Planning | 8 | 16 | 26,179 | 1,961,965 | 10,427 | $0.81 | 11 % |
-| Implementation | 34 | 68 | 62,260 | 11,389,252 | 31,823 | $3.41 | 45 % |
-| Training & testing | 11 | 22 | 27,068 | 4,199,372 | 11,215 | $1.28 | 17 % |
-| Documentation | 9 | 18 | 29,275 | 3,484,022 | 15,060 | $1.23 | 16 % |
+| Planning | 8 | 16 | 26,179 | 1,961,965 | 10,427 | $0.81 | 10 % |
+| Implementation | 35 | 70 | 63,312 | 11,836,492 | 32,298 | $3.52 | 44 % |
+| Training & testing | 11 | 22 | 27,068 | 4,199,372 | 11,215 | $1.28 | 16 % |
+| Documentation | 12 | 24 | 35,150 | 4,221,686 | 16,728 | $1.46 | 18 % |
 | Research & context | 7 | 14 | 16,314 | 2,575,009 | 3,114 | $0.71 | 9 % |
-| Answers | 1 | 2 | 833 | 402,533 | 906 | $0.11 | 1 % |
-| **Total** | **70** | 140 | 161,929 | 24,012,153 | 72,545 | **$7.55** | 100 % |
+| Answers | 2 | 4 | 1,685 | 850,825 | 1,520 | $0.21 | 3 % |
+| **Total** | **75** | 150 | 169,708 | 25,645,349 | 75,302 | **$7.99** | 100 % |
 
 **By prompt**
 
 | # | Prompt | API calls | Output | Cache read | Cost |
 |---:|---|---:|---:|---:|---:|
-| 12 | There are a few things I want to have changed. … | 8 | 3,042 | 1,674,052 | $0.49 |
-| 13 | There are three things that need to be changed … | 45 | 46,309 | 15,076,264 | $4.84 |
-| 14 | now it looks quite good but there is one last t… | 17 | 23,194 | 7,261,837 | $2.21 |
+| 3 | There are a few things I want to have changed. … | 8 | 3,042 | 1,674,052 | $0.49 |
+| 4 | There are three things that need to be changed … | 45 | 46,309 | 15,076,264 | $4.84 |
+| 5 | now it looks quite good but there is one last t… | 20 | 25,005 | 8,601,176 | $2.56 |
+| 6 | Read through claude.md and design md as well as… | 2 | 946 | 293,857 | $0.10 |
 
 Category rules: **Planning** = plan mode or questions/plan approval · **Training & testing** = training, verify scripts, pytest, API checks · **Documentation** = Markdown files and this log · **Implementation** = other file edits and shell commands · **Research & context** = reading files, PDF, skills · **Answers** = replies without a tool call.
 
-Prices (USD per 1M tokens, Claude Opus 5.5): input $4 · output $20 · cache read $0.20 · cache write $5 (5 min) / $8 (1 h). `/cost` also counts small side calls (e.g. session titles, ~$0.002) that are not in the session log. The prompt that is running while the table is generated is only partly included. Last updated 2026-10-19 22:11.
+Prices (USD per 1M tokens, Claude Opus 5.5): input $4 · output $20 · cache read $0.20 · cache write $5 (5 min) / $8 (1 h). `/cost` also counts small side calls (e.g. session titles, ~$0.002) that are not in the session log. The prompt that is running while the table is generated is only partly included. Last updated 2026-11-17 15:49.
 <!-- COSTS:END -->
 
 ---
@@ -72,3 +73,10 @@ Prices (USD per 1M tokens, Claude Opus 5.5): input $4 · output $20 · cache rea
   (`PROMPT_PROJECT`). Prompt numbers stay global; the totals over all logs equal the session total.
 - CLAUDE.md (root and NN) updated: which log an entry goes to, the new script path.
 - **Tokens:** see the "By prompt" table (the running prompt is only partly counted there)
+
+## #15 – 2026-11-17 – "Next project: radon dashboard" (repo integration)
+- Radon added as the second project: start page card + nav tab (`web/index.html`, `web/assets/site.js`), the workflow builds,
+  tests and deploys `Radon/web` to `/INSY/Radon/`, root `CLAUDE.md` and `README.md` tables.
+- `tools/token_usage.py`: `LOGS["Radon"]`, `RADON_PATHS`; a call goes to the one project (or General) whose paths it touched,
+  otherwise to the prompt's default (`PROMPT_PROJECT`, this prompt → Radon). Tests for the Radon routing added.
+- **Tokens:** see the "By prompt" table (only the calls of the general part)

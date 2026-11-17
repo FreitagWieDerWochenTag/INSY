@@ -30,19 +30,21 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]  # the repo root; Claude Code runs here, so its sessions are stored under it
 # One prompt log per project plus one for general work (design, repo rules, landing page). Each log folder holds
 # PROMPT_LOG.md (entries + generated cost block) and token_usage.json (the same numbers for the Log page).
-LOGS = {"General": REPO / "docs", "NN": REPO / "NN" / "docs"}
+LOGS = {"General": REPO / "docs", "NN": REPO / "NN" / "docs", "Radon": REPO / "Radon" / "docs"}
 
 # Which log a prompt's calls go to when a call doesn't show it by itself (see project_of_call).
 # Matched by the prompt's start; everything not listed belongs to NN (the first project, before the repo existed).
 PROMPT_PROJECT = [
     ("There are three things that need to be changed", "General"),   # redesign, DESIGN.md, Claude Design
     ("now it looks quite good but there is one last thing", "General"),  # landing page + log structure
+    ("Read through claude.md and design md as well as readme.md", "Radon"),  # second project: radon dashboard
 ]
 # Prompts before this one were all NN: the repo (and the general log) did not exist yet.
 FIRST_REPO_PROMPT = "There are a few things I want to have changed"
 # A call that touches these paths belongs to that log, no matter which prompt it is in. Only path-like arguments
 # count (file paths, shell commands, URLs), not the content of a file being written.
 PATH_KEYS = ("file_path", "file_paths", "path", "paths", "notebook_path", "command", "root", "url", "localDir")
+RADON_PATHS = re.compile(r"INSY/Radon\b|(?<![\w./-])Radon\b|radon_sample_data|run_analysis|analysis/radon|scratchpad/(explore\.py|h\.pkl)")
 NN_PATHS = re.compile(r"INSY/NN\b|(?<![\w./-])NN/|part1_2_python|part3_tensorflow|part4_5_c|part6_esp32|NN/web|/models/")
 GENERAL_PATHS = re.compile(r"DESIGN\.md|INSY/(CLAUDE\.md|README\.md|index\.html|docs/|web/|tools/|\.github)|"
                            r"(?<![\w./-])(\.github|web/index|docs/PROMPT_LOG|tools/token_usage)|scratchpad/ds/|artifact/KNZuCVMKkjNtotXPJXWULN|"
@@ -111,12 +113,10 @@ DOCS = re.compile(r"PROMPT_LOG|CLAUDE\.md|token_usage")
 
 
 def project_of_call(call, default):
-    """The log a call belongs to: NN or General by the paths its tools touched, else the prompt's default."""
+    """The log a call belongs to: the one project (or General) whose paths its tools touched, else the prompt's default."""
     text = " ".join(json.dumps(inp.get(k)) for _, inp in call.tools for k in PATH_KEYS if inp.get(k))
-    nn, general = bool(NN_PATHS.search(text)), bool(GENERAL_PATHS.search(text))
-    if nn != general:
-        return "NN" if nn else "General"
-    return default
+    hits = [name for name, rx in (("NN", NN_PATHS), ("Radon", RADON_PATHS), ("General", GENERAL_PATHS)) if rx.search(text)]
+    return hits[0] if len(hits) == 1 else default
 
 
 def prompt_project(text):

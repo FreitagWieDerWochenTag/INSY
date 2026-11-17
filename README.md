@@ -5,6 +5,7 @@ School projects for INSY, one folder per project.
 | Project | Description | Live page |
 |---|---|---|
 | [NN](NN/) | Neural network from scratch that decodes a 4-bit BCD digit into a 7-segment display: Python, TensorFlow comparison, C inference, ESP32 | [open](https://freitagwiederwochentag.github.io/INSY/NN/) |
+| [Radon](Radon/) | Seven months of radon readings in seven rooms: Python analysis with tested findings and an interactive dashboard | [open](https://freitagwiederwochentag.github.io/INSY/Radon/) |
 
 Start page: <https://freitagwiederwochentag.github.io/INSY/>
 
